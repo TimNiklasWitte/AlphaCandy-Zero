@@ -10,11 +10,12 @@ class PolicyValueNetwork(tf.keras.Model):
         super(PolicyValueNetwork, self).__init__()
 
         self.layer_list = [
-            tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=(3,3), activation="tanh", padding='same'),
-            tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=(3,3), activation="tanh", padding='same'),
-            tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=(3,3), activation="tanh", padding='same'),
-            tf.keras.layers.Conv2D(filters=4, kernel_size=(3,3), strides=(3,3), activation="tanh", padding='same'),
-            tf.keras.layers.Conv2D(filters=4, kernel_size=(3,3), strides=(3,3), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=64, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=32, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=16, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=8, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            #tf.keras.layers.Conv2D(filters=4, kernel_size=(3,3), strides=(3,3), activation="tanh", padding='same'),
+            #tf.keras.layers.Conv2D(filters=4, kernel_size=(3,3), strides=(3,3), activation="tanh", padding='same'),
             tf.keras.layers.Flatten(),
         ]
 
@@ -22,7 +23,7 @@ class PolicyValueNetwork(tf.keras.Model):
         self.value_layer = tf.keras.layers.Dense(1)
 
 
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
 
         self.policy_loss_function = tf.keras.losses.BinaryCrossentropy()
         self.value_loss_function =  tf.keras.losses.MeanSquaredError()
