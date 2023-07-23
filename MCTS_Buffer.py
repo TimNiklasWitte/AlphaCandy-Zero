@@ -12,9 +12,6 @@ from CandyAugmentation import *
 
 # from matplotlib import pyplot as plt
 
-SHUFFLE_WINDOW_SIZE = 1000
-BATCH_SIZE = 32
-
 class MCTS_Buffer:
 
     def __init__(self, num_samples, state_shape):

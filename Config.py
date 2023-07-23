@@ -1,3 +1,14 @@
+#
+# Training
+#
+
+SHUFFLE_WINDOW_SIZE = 1000
+BATCH_SIZE = 64
+
+#
+# Create dataset
+#
+
 MCTS_BUFFER_SIZE = 200
 NUM_PROCS = 100
 iterations_per_process = int(MCTS_BUFFER_SIZE / NUM_PROCS) # // better?
@@ -44,7 +55,7 @@ import numpy as np
 
 
 CANDY_BUFF_HEIGHT = 5
-CANDY_IMG_SIZE = 60
+CANDY_IMG_SIZE = 30
 
 STATE_IMG_SHAPE = ((env.FIELD_SIZE + CANDY_BUFF_HEIGHT)* CANDY_IMG_SIZE, env.FIELD_SIZE * CANDY_IMG_SIZE, 4)
 STATE_IMG_DTYPE = np.float32
