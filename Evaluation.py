@@ -11,10 +11,10 @@ from multiprocessing import Process, shared_memory, Semaphore
 
 
 
-def process_evaluate(process_id, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, wait_for_response_sema, use_policy_network_only):
+def process_evaluate(process_id, seed, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, wait_for_response_sema, use_policy_network_only):
     
 
-    env = CandyCrushGym(process_id)
+    env = CandyCrushGym(seed)
     state = env.reset()
 
     avg_rewards_mem = np.ndarray(shape=(EVAL_NUM_PROCS,), dtype=np.float32, buffer=avg_rewards_shm.buf)
@@ -25,7 +25,7 @@ def process_evaluate(process_id, avg_rewards_shm, sum_rewards_shm, request_state
 
     iterator = range(EVAL_NUM_STEPS_PER_PROC)
     if process_id == EVAL_NUM_PROCS - 1:
-        print("<INFO> Evaluation")
+        print(f"<INFO> Evaluation use_policy_network_only={use_policy_network_only}")
         iterator = tqdm.tqdm(iterator,position=0, leave=True)
 
     rewards = np.zeros(shape=(EVAL_NUM_STEPS_PER_PROC,), dtype=np.float32)
@@ -68,11 +68,11 @@ def process_evaluate(process_id, avg_rewards_shm, sum_rewards_shm, request_state
                     break 
 
         else:
-            mcts = MCTS(env, state, request_state_img_shm, response_policy_shm, wait_for_response_sema, stateToImageConverter)
+            mcts = MCTS(env, request_state_img_shm, response_policy_shm, wait_for_response_sema, stateToImageConverter)
             action, _ = mcts.run(NUM_MCTS_STEPS)
 
          
-            state, reward, done, _, _ = env.step(action)
+            state, reward, done, _  = env.step(action)
     
             if done:
                 state, _ = env.reset()
@@ -110,10 +110,11 @@ def evaluate(policyValueNetwork, use_policy_network_only):
         response_policy_shm = shared_memory.SharedMemory(create=True, size=policy.nbytes)
         wait_for_response_sema = Semaphore(0)
 
+        seed = np.random.randint(low=0, high=9999999)
 
         proc = Process(
             target=process_evaluate, 
-            args=(process_id, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, wait_for_response_sema, use_policy_network_only)
+            args=(process_id, seed, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, wait_for_response_sema, use_policy_network_only)
         )
 
         proc_list.append(proc)

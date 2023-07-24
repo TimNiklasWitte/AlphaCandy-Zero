@@ -905,7 +905,7 @@ class CandyCrushGym(gym.Env):
         """ Reward is given for XY. """
     
         return 0
-        
+    
     # @property
     # def observation_space_shape(self):
     #     return (self.FIELD_SIZE, self.FIELD_SIZE)

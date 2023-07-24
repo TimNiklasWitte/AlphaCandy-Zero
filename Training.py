@@ -23,14 +23,6 @@ def main():
     #
     mcts_buffer = MCTS_Buffer(MCTS_BUFFER_SIZE, STATE_SHAPE)
 
-
-    # print(mcts_buffer.values.shape)
-    # x = np.tile(mcts_buffer.values, 10)
-    # print(x.shape)
-
-    # return 
-
-
     #
     # Logging
     # 
@@ -45,6 +37,7 @@ def main():
     policyValueNetwork.build(input_shape=(1,*STATE_IMG_SHAPE))
 
     policyValueNetwork.summary()
+
 
     update_dataset(mcts_buffer, policyValueNetwork)
 

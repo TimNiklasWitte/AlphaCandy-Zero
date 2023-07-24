@@ -5,6 +5,8 @@ from multiprocessing import Process, shared_memory
 from Config import *
 from StateToImageConverter import *
 
+from matplotlib import pyplot as plt
+
 class CandyAugmentation:
 
     def __init__(self):
@@ -35,7 +37,7 @@ class CandyAugmentation:
 
         num_permutations = len(permutations)
 
-        #num_permutations = int(num_permutations / 4)
+        num_permutations = int(num_permutations / 2)
         augmentated_states = np.zeros(shape=(num_permutations, MCTS_BUFFER_SIZE, *STATE_SHAPE), dtype=STATE_DTYPE)
         augmentated_states_shm = shared_memory.SharedMemory(create=True, size=augmentated_states.nbytes)
 
@@ -134,6 +136,7 @@ class CandyAugmentation:
 # x = stateToImageConverter(states[0])
 
 # plt.imshow(x)
+# print(x.shape)
 # plt.savefig("1.png")
 
 # y = stateToImageConverter(augmentated_states[0][0])
