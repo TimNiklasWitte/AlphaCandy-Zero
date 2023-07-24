@@ -166,6 +166,7 @@ class MCTS:
 
             # convert + normalize -> prevent error by np.random.choice 
             response_policy = response_policy.astype('float64')
+            response_policy[self.invalid_actions] = 0
             response_policy /= response_policy.sum()  
             while True:
                 
