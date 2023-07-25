@@ -105,6 +105,24 @@ def main():
         if epoch != 1:
             update_dataset(mcts_buffer, policyValueNetwork)
 
+            dataset = tf.data.Dataset.from_generator(
+                    mcts_buffer.dataset_generator,
+                    output_signature=(
+                            tf.TensorSpec(shape=STATE_IMG_SHAPE , dtype=STATE_IMG_DTYPE),
+                            tf.TensorSpec(shape=(), dtype=VALUE_DTYPE),
+                            tf.TensorSpec(shape=(), dtype=ACTION_DTYPE)
+                        )
+                )
+            
+            dataset_size = mcts_buffer.num_samples
+            TEST_DATASET_SIZE = int((dataset_size / 100) * TEST_DATASET_SIZE_PERCENTAGE)
+            test_dataset = dataset.take(TEST_DATASET_SIZE) 
+            train_dataset = dataset.skip(TEST_DATASET_SIZE)
+
+            train_dataset = train_dataset.apply(prepare_data)
+            test_dataset = test_dataset.apply(prepare_data)
+
+
 
         for num_train_loop in range(NUM_TRAIN_LOOPS):
             print(f"<INFO> Train loop: {num_train_loop}/{NUM_TRAIN_LOOPS}")
