@@ -37,8 +37,7 @@ def main():
     policyValueNetwork.build(input_shape=(1,*STATE_IMG_SHAPE))
 
     policyValueNetwork.summary()
-
-
+ 
     update_dataset(mcts_buffer, policyValueNetwork)
 
 

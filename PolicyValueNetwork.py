@@ -10,12 +10,12 @@ class PolicyValueNetwork(tf.keras.Model):
         super(PolicyValueNetwork, self).__init__()
 
         self.layer_list = [
-            tf.keras.layers.Conv2D(filters=32, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
-            tf.keras.layers.Conv2D(filters=16, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
-            tf.keras.layers.Conv2D(filters=10, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
-            tf.keras.layers.Conv2D(filters=7, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=40, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=30, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=15, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
+            tf.keras.layers.Conv2D(filters=8, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
             tf.keras.layers.Flatten(),
-            #tf.keras.layers.Dense(10)
+            tf.keras.layers.Dense(10, activation="tanh")
         ]
 
         self.policy_layer = tf.keras.layers.Dense(NUM_ACTIONS, activation="softmax")
