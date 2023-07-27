@@ -64,7 +64,7 @@ class MCTS_Window:
 
         self.step(first_run=True)
 
-    def step(self, first_run=False):
+    def step(self, first_run=False, return_policy=False):
         state_env = np.copy(self.env.state)
 
 
@@ -77,7 +77,10 @@ class MCTS_Window:
             UCT_values = [node.UCT for node in self.current.childrens if not node.done]
 
             if len(UCT_values) == 0:
-                return self.get_best_action(), self.get_policy(), self.root.q, False
+                if return_policy:
+                    return self.get_best_action(), self.get_policy(), self.root.q, False
+                else:
+                    return 
 
             max_idx = np.argmax(UCT_values)
             self.current = self.current.childrens[max_idx]
@@ -115,77 +118,33 @@ class MCTS_Window:
                 self.current.done = True
 
                 if self.current == self.root:
-                    return None, None, None, True
+                    if return_policy:
+                        return None, None, None, True
+                    else:
+                        return 
 
         self.env.state = state_env
         
         if not first_run:
-            return self.get_best_action(), self.get_policy(), self.root.q, False
-    
-    def run(self, num_iterations: int):
-        
-        state_env = np.copy(self.env.state)
-
-        for i in range(num_iterations):
-
-            current = self.root
-
-            #
-            # Tree Traversal
-            #
-            while len(current.childrens) != 0:
-                UCT_values = [node.UCT for node in current.childrens if not node.done]
-
-                if len(UCT_values) == 0:
-                    print("here")
-                    return self.get_best_action(), self.get_policy(), self.root.q, False
-
-                max_idx = np.argmax(UCT_values)
-                current = current.childrens[max_idx]
-
-            #
-            # Rollout?
-            #   
-            if current.n == 0:
-                G = self.rollout(current)
-
-                self.backpropagate(current, G)
-              
+            if return_policy:
+                return self.get_best_action(), self.get_policy(), self.root.q, False
             else:
-                
-                #
-                # Node expansion
-                #
-                
-                state_current = np.copy(current.state)
-                can_not_expand = True
-                for action in self.valid_actions:
-                    
-                    self.env.state = state_current
-
-                    next_state, reward, _, _ = self.env.step(action)
-                        
-                    if reward != 0:
-                        can_not_expand = False 
-                        next_state = np.copy(next_state)
-                        node = Node(parent=current, state=next_state, action=action, reward=reward)
-                        current.childrens.append(node)
-
-                        state_current = np.copy(current.state)
-                
-                if can_not_expand:
-                    current.done = True
-
-                    if current == self.root:
-                        return None, None, None, True 
-
-        self.env.state = state_env
-
-        
-        return self.get_best_action(), self.get_policy(), self.root.q, False
+                return 
+    
 
     def get_policy(self):
-        return [(node.action, node.q) for node in self.root.childrens]         
+        
+        q_values = [node.q for node in self.root.childrens] 
+        q_values = np.array(q_values)
+        q_values = q_values + 0.000001
+        policy_probs = q_values / q_values.sum()
+
+        actions = [node.action for node in self.root.childrens] 
+        actions = np.array(actions)
+
+       
+
+        return list(zip(actions, policy_probs))      
 
     def get_best_action(self):
 

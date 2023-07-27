@@ -25,7 +25,7 @@ class Window:
 
         self.root = tk.Tk()
         
-        self.root.title("Decision Transformer plays Candy Crush")
+        self.root.title("AlphaCandy Zero")
     
         self.display = Display(master=self.root, env=self.env, show_plots=self.show_plots)
 
@@ -38,5 +38,8 @@ class Window:
         self.display.update_game_field()
      
 
-    def update_plots(self, reward, action_probs, desired_reward, update_stats=True):
-        self.display.update_plots(reward, action_probs, desired_reward, update_stats)
+    def update_policy_plot(self, policy, num_step):
+        self.display.update_policy_plot(policy, num_step)
+    
+    # def update_mcts_plot(self, reward):
+    #     self.

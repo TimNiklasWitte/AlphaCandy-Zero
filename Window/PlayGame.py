@@ -19,6 +19,8 @@ from MCTS import *
 
 from threading import Thread
 
+from matplotlib import pyplot as plt
+
 import time 
 import argparse
 import pyautogui
@@ -30,13 +32,15 @@ import tkinter as tk
 import numpy as np
 import tensorflow as tf
 
+from PlayGameConfig import *
+
 show_arrow_time = 1
 show_swap_time = 1
 show_empty_time = 1
 drop_candy_time = 0.03
 
 
-def display_execute_action(action, action_probs, desired_reward, env, window):      
+def display_execute_action(action, env, window):      
 
         #
         # Display arrow
@@ -48,6 +52,8 @@ def display_execute_action(action, action_probs, desired_reward, env, window):
 
         x = fieldID // env.FIELD_SIZE
         y = fieldID % env.FIELD_SIZE
+
+
 
         # top
         if direction == 0:
@@ -69,6 +75,9 @@ def display_execute_action(action, action_probs, desired_reward, env, window):
         # right or left
         else:
             window.display.canvas.create_image(x * window.display.image_size, y * window.display.image_size, image=img, anchor=NW)
+
+
+        y += env.CANDY_BUFF_HEIGHT
 
         time.sleep(show_arrow_time)
         img = None
@@ -105,13 +114,13 @@ def display_execute_action(action, action_probs, desired_reward, env, window):
         # React
         #
         reward = env.react(x,y, x_swap, y_swap)
-     
+        print(reward)
         if reward == 0:
             tmp = env.state[y,x]
             env.state[y,x] = env.state[y_swap, x_swap]
             env.state[y_swap, x_swap] = tmp
 
-            window.update_plots(reward, action_probs, desired_reward)
+            #window.update_policy_plot(reward, action_probs, desired_reward)
             window.update_game_field()
 
             time.sleep(show_empty_time) # show also undo swap game state
@@ -119,7 +128,7 @@ def display_execute_action(action, action_probs, desired_reward, env, window):
             return 
         
         window.update_game_field()
-        window.update_plots(reward, action_probs, desired_reward)
+        #window.update_plots(reward, action_probs, desired_reward)
      
         time.sleep(show_empty_time)
 
@@ -135,7 +144,7 @@ def display_execute_action(action, action_probs, desired_reward, env, window):
             for idx, column_idx in enumerate(columns_to_fill):
 
                 done = True
-                for x in range(env.FIELD_SIZE):
+                for x in range(0, env.FIELD_SIZE + env.CANDY_BUFF_HEIGHT):
 
                     if env.state[x, column_idx] == -1:
                         
@@ -203,17 +212,54 @@ def main():
     seed = np.random.randint(0, 500000)
     env = CandyCrushGym(seed)
 
+    # isValidAction(4)
+
+    # return 
     stateToImageConverter = StateToImageConverter(FIELD_SIZE, CANDY_BUFF_HEIGHT, CANDY_IMG_SIZE)
 
     state = env.reset()
 
 
-    mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
+    window = Window(env, True)
 
-    for i in range(200):
-        best_action, policy, value, done = mcts.step()
+    window.update_game_field()
+
+    
+    
+
+    # best_action, policy, value, done = mcts.step(return_policy=True)
+    # print(list(policy))
+
+    for i in range(10):
+        
+        mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
+
+        for num_step in range(NUM_MCTS_STEPS):
+            
+            if num_step % NUM_MCTS_SUB_STEPS_PLOT == 0:
+                
+                best_action, policy, value, done = mcts.step(return_policy=True)
+
+                # actions, probs = zip(*policy)
+
+                # print(actions, probs)
+                # policy_probs = np.reshape(policy_probs, newshape=(env.FIELD_SIZE, env.FIELD_SIZE))
+                # policy_probs = np.transpose(policy_probs)
+                # policy_probs = np.reshape(policy_probs, newshape=(-1,))
+                window.update_policy_plot(policy, num_step)
+
+            else:
+                mcts.step(return_policy=False)
+                
+        window.update_policy_plot(policy, NUM_MCTS_STEPS)
+
   
-        print(policy)
+        display_execute_action(best_action, env, window)
+       
+    #state = stateToImageConverter(state)
+
+    # plt.imshow(state)
+    # plt.show()
 
     # state_img = stateToImageConverter(state)
     # state_img = tf.expand_dims(state_img, axis=0)
@@ -231,7 +277,7 @@ def main():
     
 
 
-    # display_execute_action(best_action, None, 0, env, window)
+    
 
     # print(reward)
 
