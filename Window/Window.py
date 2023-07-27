@@ -38,8 +38,15 @@ class Window:
         self.display.update_game_field()
      
 
-    def update_policy_plot(self, policy, num_step):
-        self.display.update_policy_plot(policy, num_step)
+    def update_policy_plot(self, policy, num_mcts_step):
+        self.display.update_policy_plot(policy, num_mcts_step)
     
+
+    def update_policy_statistics_plot(self, policy, num_step, show=False):
+        self.display.update_policy_statistics_plot(policy, num_step, show)
+
+    def update_reward_statistics_plot(self, reward, num_step):
+        self.display.update_reward_statistics_plot(reward, num_step)
+
     # def update_mcts_plot(self, reward):
     #     self.

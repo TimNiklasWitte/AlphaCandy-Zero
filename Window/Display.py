@@ -49,28 +49,58 @@ class Display(tk.Frame):
 
         # Plots
         if show_plots:
-
-            self.frame_plots = tk.Frame(master=master)
-            self.frame_plots.pack(side=RIGHT, fill=tk.BOTH, expand=True)
-
-
-            self.fig = Figure(figsize=(6, 6), dpi=100)
-            self.canvas_plot = FigureCanvasTkAgg(self.fig, master=self.frame_plots)
-            self.canvas_plot.get_tk_widget().pack(side=LEFT, fill=tk.BOTH, expand=True)
+            
+            
+            self.frame_plot = tk.Frame(master=master)
+            self.frame_plot.pack(side=RIGHT, fill=tk.BOTH, expand=True)
 
 
-            self.fig1 = Figure(figsize=(6, 6), dpi=100)
-            self.canvas_plot1 = FigureCanvasTkAgg(self.fig1, master=self.frame_plots)
-            self.canvas_plot1.get_tk_widget().pack(side=RIGHT, fill=tk.BOTH, expand=True)
+            # 
+            # Policy Plot
+            # 
+            self.frame_policy_plot = tk.Frame(master=self.frame_plot)
+            self.frame_policy_plot.pack(side=LEFT, fill=tk.BOTH, expand=True)
+            
+            self.fig_policy = Figure(figsize=(6, 6), dpi=100)
+            self.canvas_policy_plot = FigureCanvasTkAgg(self.fig_policy, master=self.frame_policy_plot)
+            self.canvas_policy_plot.get_tk_widget().pack(side=LEFT, fill=tk.BOTH, expand=True)
+
+            # 
+            # Statistics_plots
+            # 
+            self.frame_statistics_plots = tk.Frame(master=self.frame_plot)
+            self.frame_statistics_plots.pack(side=RIGHT, fill=tk.BOTH, expand=True)
+
+            # Policy statistics
+            self.frame_policy_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
+            self.frame_policy_statistics_plot.pack(side=TOP, fill=tk.BOTH, expand=True)
+
+            self.fig_policy_statistics = Figure(figsize=(3, 4), dpi=100)
+            self.canvas_policy_statistics_plot = FigureCanvasTkAgg(self.fig_policy_statistics, master=self.frame_policy_statistics_plot)
+            self.canvas_policy_statistics_plot.get_tk_widget().pack(side=TOP,fill=tk.BOTH, expand=True)
+
+            # Reward statistics
+
+            self.frame_reward_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
+            self.frame_reward_statistics_plot.pack(side=BOTTOM, fill=tk.BOTH, expand=True)
+
+            self.fig_reward_statistics = Figure(figsize=(3, 4), dpi=100)
+            self.canvas_reward_statistics_plot = FigureCanvasTkAgg(self.fig_reward_statistics, master=self.frame_policy_statistics_plot)
+            self.canvas_reward_statistics_plot.get_tk_widget().pack(side=BOTTOM,fill=tk.BOTH, expand=True)
 
         self.step_cnt = 0
         self.collected_rewards = []
-        self.steps = []
+        self.steps_reward = []
 
         self.previous_state = np.zeros_like(env.state)
         self.images = []
 
         self.candies = []
+
+
+        self.steps_mcts = []
+        self.policy_diffs = []
+        self.previous_policy = None
 
 
     def update_game_field(self):
@@ -121,16 +151,75 @@ class Display(tk.Frame):
                 self.previous_state[y,x] = candyID
 
 
+    def update_policy_statistics_plot(self, policy, num_mcts_step, show=False):
+
+        actions, probs = zip(*policy)
+
+        probs = np.array(probs)
+        if len(self.steps_mcts) == 0:
+            self.previous_policy = probs
+            self.steps_mcts.append(num_mcts_step)
+            return 
+        
+       
+        diff_policy = probs - self.previous_policy
+        self.previous_policy = probs
+
+        avg_diff = np.mean(diff_policy)
+        self.policy_diffs.append(avg_diff)
+        self.steps_mcts.append(num_mcts_step)
+
+    
+        if show:
+            self.fig_policy_statistics.clf()
+
+            plt_policy_statistics = self.fig_policy_statistics.subplots(1)
+            plt_policy_statistics.plot(self.steps_mcts[:-1], self.policy_diffs)
+            
+            self.fig_policy_statistics.tight_layout()
+            self.canvas_policy_statistics_plot.draw()
+
+    
+    def update_reward_statistics_plot(self, reward, num_step):
+        
+        self.step_cnt += 1
+
+        self.collected_rewards.append(reward)
+        self.steps_reward.append(num_step)
+        
+        self.fig_reward_statistics.clf()
+
+     
+        plt_reward_statistics = self.fig_reward_statistics.subplots(1)
+      
+        plt_reward_statistics.plot(self.steps_reward, self.collected_rewards, label="Reward")
+        plt_reward_statistics.set_xlim(left=max(0, self.step_cnt - 10), right=self.step_cnt + 10)
+     
+        plt_reward_statistics.set_title("Obtained rewards")
+        plt_reward_statistics.set_xlabel("Step")
+        plt_reward_statistics.set_ylabel("Reward")
+        plt_reward_statistics.grid(True)
+     
+
+        # Plot mean of collected rewards (not all! only of displayed)
+        collected_rewards_part = self.collected_rewards[max(0, self.step_cnt - 50):self.step_cnt]
+        mean_collected_rewards_part = np.mean(collected_rewards_part)
+        plt_reward_statistics.axhline(mean_collected_rewards_part, color='r', linestyle="--", label="Mean")
+        plt_reward_statistics.legend(loc='lower right')
+
+        plt_reward_statistics.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+
+
+
+        self.fig_reward_statistics.tight_layout()
+        self.canvas_reward_statistics_plot.draw()
   
-    def update_policy_plot(self, policy, num_step):
+    def update_policy_plot(self, policy, num_mcts_step):
 
         if not self.show_plots:
             return
 
-
-
-        #self.fig.add_subplot(221)
-        #policy_probs = np.zeros(shape=(NUM_ACTIONS,), dtype=np.float32)
         actions, probs = zip(*policy)
 
         
@@ -165,84 +254,38 @@ class Display(tk.Frame):
         min_prob = np.min(probs)
         max_prob = np.max(probs)
         
-        self.fig.clf()
-        self.fig.suptitle(f"Step {num_step}/{NUM_MCTS_STEPS}")
+        self.fig_policy.clf()
+        self.fig_policy.suptitle(f"MCTS steps: {num_mcts_step}/{NUM_MCTS_STEPS}")
 
         #
         # Action: Top
         #
-        prob_top_plt = self.fig.add_subplot(221)
+        prob_top_plt = self.fig_policy.add_subplot(221)
         prob_top_plt.set_title("Top")
-        img = prob_top_plt.imshow(action_top, vmin=min_prob, vmax=max_prob)
+        prob_top_plt.imshow(action_top, vmin=min_prob, vmax=max_prob)
     
        
         #
         # Action: Right
         #
-        prob_right_plt = self.fig.add_subplot(222)
+        prob_right_plt = self.fig_policy.add_subplot(222)
         prob_right_plt.set_title("Right")
-        img = prob_right_plt.imshow(action_right, vmin=min_prob, vmax=max_prob)
-        #self.fig.colorbar(img)
-
-        #
-        # Desired reward
-        #
-        # state_value_plt = self.fig.add_subplot(333)
-        # state_value_plt.set_title("Desired reward")
-
-        # state_value_plt.bar([1], [desired_reward], align='center')
-        # state_value_plt.axes.get_xaxis().set_visible(False)
-        # state_value_plt.grid(True)
+        prob_right_plt.imshow(action_right, vmin=min_prob, vmax=max_prob)
 
         #
         # Action: down
         #
-        prob_down_plt = self.fig.add_subplot(223)
+        prob_down_plt = self.fig_policy.add_subplot(223)
         prob_down_plt.set_title("Down")
-        img = prob_down_plt.imshow(action_down, vmin=min_prob, vmax=max_prob)
-        #self.fig.colorbar(img)
+        prob_down_plt.imshow(action_down, vmin=min_prob, vmax=max_prob)
+ 
 
         #
         # Action: left
         #
-        prob_left_plt = self.fig.add_subplot(224)
+        prob_left_plt = self.fig_policy.add_subplot(224)
         prob_left_plt.set_title("Left")
-        img = prob_left_plt.imshow(action_left, vmin=min_prob, vmax=max_prob)
-        #self.fig.colorbar(img)
-
-        # self.fig.subplots_adjust(right=0.8)
-        # cbar_ax = self.fig.add_axes([1.85, 0.15, 0.05, 0.7])
-        # self.fig.colorbar(img, cax=cbar_ax)
-
-        #
-        # Received rewards
-        #
-        # collected_rewards_plt = self.fig.add_subplot(336)
-
-        # if update_stats:
-        #     self.steps.append(self.step_cnt)
-        #     self.collected_rewards.append(reward)
-          
-
-        # collected_rewards_plt.plot(self.steps, self.collected_rewards, label="Reward")
-        # collected_rewards_plt.set_xlim(left=max(0, self.step_cnt - 10), right=self.step_cnt + 10)
-     
-        # collected_rewards_plt.set_title("Obtained rewards")
-        # collected_rewards_plt.set_xlabel("Step")
-        # collected_rewards_plt.set_ylabel("Reward")
-        # collected_rewards_plt.grid(True)
-        # collected_rewards_plt.set_ylim(0, 2)
-
-        # if update_stats:
-        #     self.step_cnt += 1
-
-        # # Plot mean of collected rewards (not all! only of displayed)
-        # collected_rewards_part = self.collected_rewards[max(0, self.step_cnt - 50):self.step_cnt]
-        # mean_collected_rewards_part = np.mean(collected_rewards_part)
-        # collected_rewards_plt.axhline(mean_collected_rewards_part, color='r', linestyle="--", label="Mean")
-        # collected_rewards_plt.legend(loc='lower right')
-
-        # collected_rewards_plt.xaxis.set_major_locator(MaxNLocator(integer=True))
-
-        self.fig.tight_layout()
-        self.canvas_plot.draw()
+        prob_left_plt.imshow(action_left, vmin=min_prob, vmax=max_prob)
+      
+        self.fig_policy.tight_layout()
+        self.canvas_policy_plot.draw()

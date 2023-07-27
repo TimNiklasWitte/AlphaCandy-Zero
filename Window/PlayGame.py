@@ -42,132 +42,133 @@ drop_candy_time = 0.03
 
 def display_execute_action(action, env, window):      
 
-        #
-        # Display arrow
-        #
+    #
+    # Display arrow
+    #
 
-        fieldID = action // env.NUM_DIRECTIONS
+    fieldID = action // env.NUM_DIRECTIONS
 
-        direction = action % env.NUM_DIRECTIONS
+    direction = action % env.NUM_DIRECTIONS
 
-        x = fieldID // env.FIELD_SIZE
-        y = fieldID % env.FIELD_SIZE
+    x = fieldID // env.FIELD_SIZE
+    y = fieldID % env.FIELD_SIZE
 
 
 
-        # top
-        if direction == 0:
-            img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Top.png")
-        # right
-        elif direction == 1:
-            img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Right.png")
-        # down
-        elif direction == 2:
-            img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Down.png")
-        # left
-        else:
-            img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Left.png")
+    # top
+    if direction == 0:
+        img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Top.png")
+    # right
+    elif direction == 1:
+        img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Right.png")
+    # down
+    elif direction == 2:
+        img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Down.png")
+    # left
+    else:
+        img = tk.PhotoImage(file=sys.path[0]+"/Images/Arrows/Left.png")
 
-        # top or down
-        if direction == 0 or direction == 2:
-            window.display.canvas.create_image(x * window.display.image_size , y * window.display.image_size, image=img, anchor=NW)
+    # top or down
+    if direction == 0 or direction == 2:
+        window.display.canvas.create_image(x * window.display.image_size , y * window.display.image_size, image=img, anchor=NW)
                 
-        # right or left
-        else:
-            window.display.canvas.create_image(x * window.display.image_size, y * window.display.image_size, image=img, anchor=NW)
+    # right or left
+    else:
+        window.display.canvas.create_image(x * window.display.image_size, y * window.display.image_size, image=img, anchor=NW)
 
 
-        y += env.CANDY_BUFF_HEIGHT
+    y += env.CANDY_BUFF_HEIGHT
 
-        time.sleep(show_arrow_time)
-        img = None
+    time.sleep(show_arrow_time)
+    img = None
 
-        #
-        # Swap
-        #
+    #
+    # Swap
+    #
 
-        # Swap candy
-        x_swap = x # attention: numpy x->y are swapped
-        y_swap = y # attention: numpy x->y are swapped
-        # top
-        if direction == 0:
-            y_swap += -1
-        # down
-        elif direction == 2: 
-            y_swap += 1
-        # right 
-        elif direction == 1:
-            x_swap += 1
-        # left 
-        elif direction == 3:
-            x_swap += -1
+    # Swap candy
+    x_swap = x # attention: numpy x->y are swapped
+    y_swap = y # attention: numpy x->y are swapped
+    # top
+    if direction == 0:
+        y_swap += -1
+    # down
+    elif direction == 2: 
+        y_swap += 1
+    # right 
+    elif direction == 1:
+        x_swap += 1
+    # left 
+    elif direction == 3:
+        x_swap += -1
 
-        # swap
+    # swap
+    tmp = env.state[y,x]
+    env.state[y,x] = env.state[y_swap, x_swap]
+    env.state[y_swap, x_swap] = tmp
+
+    window.update_game_field()
+    time.sleep(show_swap_time)
+
+    #
+    # React
+    #
+    reward = env.react(x,y, x_swap, y_swap)
+        
+    if reward == 0:
         tmp = env.state[y,x]
         env.state[y,x] = env.state[y_swap, x_swap]
         env.state[y_swap, x_swap] = tmp
 
+        #window.update_policy_plot(reward, action_probs, desired_reward)
         window.update_game_field()
-        time.sleep(show_swap_time)
 
-        #
-        # React
-        #
-        reward = env.react(x,y, x_swap, y_swap)
-        print(reward)
-        if reward == 0:
-            tmp = env.state[y,x]
-            env.state[y,x] = env.state[y_swap, x_swap]
-            env.state[y_swap, x_swap] = tmp
+        time.sleep(show_empty_time) # show also undo swap game state
 
-            #window.update_policy_plot(reward, action_probs, desired_reward)
-            window.update_game_field()
-
-            time.sleep(show_empty_time) # show also undo swap game state
-
-            return 
+        return 
         
-        window.update_game_field()
-        #window.update_plots(reward, action_probs, desired_reward)
+    window.update_game_field()
+    #window.update_plots(reward, action_probs, desired_reward)
      
-        time.sleep(show_empty_time)
+    time.sleep(show_empty_time)
 
-        #
-        # Fill 
-        #
+    #
+    # Fill 
+    #
 
-        columns_to_fill = list(env.columns_to_fill)
-        env.columns_to_fill = set()
+    columns_to_fill = list(env.columns_to_fill)
+    env.columns_to_fill = set()
 
-        while len(columns_to_fill) != 0:
+    while len(columns_to_fill) != 0:
     
-            for idx, column_idx in enumerate(columns_to_fill):
+        for idx, column_idx in enumerate(columns_to_fill):
 
-                done = True
-                for x in range(0, env.FIELD_SIZE + env.CANDY_BUFF_HEIGHT):
+            done = True
+            for x in range(0, env.FIELD_SIZE + env.CANDY_BUFF_HEIGHT):
 
-                    if env.state[x, column_idx] == -1:
+                if env.state[x, column_idx] == -1:
                         
-                        done = False
-                        if x - 1 < 0:
-                            candy = np.random.randint(1, env.NUM_ELEMENTS)
-                        else:
-                            candy = env.state[x - 1, column_idx]
-                            env.state[x - 1, column_idx] = -1
+                    done = False
+                    if x - 1 < 0:
+                        candy = np.random.randint(1, env.NUM_ELEMENTS)
+                    else:
+                        candy = env.state[x - 1, column_idx]
+                        env.state[x - 1, column_idx] = -1
         
-                        env.state[x, column_idx] = candy
+                    env.state[x, column_idx] = candy
                         
-                        time.sleep(drop_candy_time)
+                    time.sleep(drop_candy_time)
 
-                        window.update_game_field()
-                        window.display.previous_state[x, column_idx] = candy
+                    window.update_game_field()
+                    window.display.previous_state[x, column_idx] = candy
                         
 
-                if done:
-                    columns_to_fill.pop(idx)
+            if done:
+                columns_to_fill.pop(idx)
 
-        window.update_game_field()
+    window.update_game_field()
 
+    return reward
 
 
 def main():
@@ -230,13 +231,13 @@ def main():
     # best_action, policy, value, done = mcts.step(return_policy=True)
     # print(list(policy))
 
-    for i in range(10):
+    for num_step in range(10):
         
         mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
 
-        for num_step in range(NUM_MCTS_STEPS):
+        for num_mcts_step in range(NUM_MCTS_STEPS):
             
-            if num_step % NUM_MCTS_SUB_STEPS_PLOT == 0:
+            if num_mcts_step % NUM_MCTS_SUB_STEPS_PLOT == 0:
                 
                 best_action, policy, value, done = mcts.step(return_policy=True)
 
@@ -246,16 +247,21 @@ def main():
                 # policy_probs = np.reshape(policy_probs, newshape=(env.FIELD_SIZE, env.FIELD_SIZE))
                 # policy_probs = np.transpose(policy_probs)
                 # policy_probs = np.reshape(policy_probs, newshape=(-1,))
-                window.update_policy_plot(policy, num_step)
+                window.update_policy_plot(policy, num_mcts_step)
+                window.update_policy_statistics_plot(policy, num_mcts_step, show=True)
 
-            else:
-                mcts.step(return_policy=False)
                 
+            else:
+                best_action, policy, value, done = mcts.step(return_policy=True)
+                
+                window.update_policy_statistics_plot(policy, num_mcts_step, show=False)
+
         window.update_policy_plot(policy, NUM_MCTS_STEPS)
 
   
-        display_execute_action(best_action, env, window)
-       
+        reward = display_execute_action(best_action, env, window)
+        window.update_reward_statistics_plot(reward, num_step)
+
     #state = stateToImageConverter(state)
 
     # plt.imshow(state)
