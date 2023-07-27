@@ -151,6 +151,11 @@ class Display(tk.Frame):
                 self.previous_state[y,x] = candyID
 
 
+    def reset_policy_statistics(self):
+        self.steps_mcts = []
+        self.previous_policy = None 
+        self.policy_diffs = []
+
     def update_policy_statistics_plot(self, policy, num_mcts_step, show=False):
 
         actions, probs = zip(*policy)
@@ -162,10 +167,10 @@ class Display(tk.Frame):
             return 
         
        
-        diff_policy = probs - self.previous_policy
+        diff_policy = np.abs(probs - self.previous_policy)
         self.previous_policy = probs
 
-        avg_diff = np.mean(diff_policy)
+        avg_diff = np.average(diff_policy)
         self.policy_diffs.append(avg_diff)
         self.steps_mcts.append(num_mcts_step)
 
@@ -175,11 +180,17 @@ class Display(tk.Frame):
 
             plt_policy_statistics = self.fig_policy_statistics.subplots(1)
             plt_policy_statistics.plot(self.steps_mcts[:-1], self.policy_diffs)
-            
+            plt_policy_statistics.set_xlim(left=0, right=NUM_MCTS_STEPS)
+            plt_policy_statistics.set_title("Changes in the policy $\pi(a|s)$ \n$ \Delta \pi(t) = \\frac{1}{|a|} \sum_a | \pi(a|s)_t - \pi(a|s)_{t-1} |$ \n $ \Delta v(t) = |v(s)_t - v(s)_{t-1}|$") 
+            plt_policy_statistics.set_xlabel("MCTS step t")
+            plt_policy_statistics.set_ylabel("$\Delta \pi(t)$")
+            plt_policy_statistics.grid(True)
+
             self.fig_policy_statistics.tight_layout()
             self.canvas_policy_statistics_plot.draw()
 
-    
+            # and state value $v(s)$ given current state s \n
+            # $ \Delta \v(t) = | v(s)_t - v(s)_{t-1}|$
     def update_reward_statistics_plot(self, reward, num_step):
         
         self.step_cnt += 1
@@ -263,7 +274,7 @@ class Display(tk.Frame):
         prob_top_plt = self.fig_policy.add_subplot(221)
         prob_top_plt.set_title("Top")
         prob_top_plt.imshow(action_top, vmin=min_prob, vmax=max_prob)
-    
+        prob_top_plt.set_xticks(range(FIELD_SIZE))
        
         #
         # Action: Right
@@ -271,6 +282,7 @@ class Display(tk.Frame):
         prob_right_plt = self.fig_policy.add_subplot(222)
         prob_right_plt.set_title("Right")
         prob_right_plt.imshow(action_right, vmin=min_prob, vmax=max_prob)
+        prob_right_plt.set_xticks(range(FIELD_SIZE))
 
         #
         # Action: down
@@ -278,7 +290,7 @@ class Display(tk.Frame):
         prob_down_plt = self.fig_policy.add_subplot(223)
         prob_down_plt.set_title("Down")
         prob_down_plt.imshow(action_down, vmin=min_prob, vmax=max_prob)
- 
+        prob_down_plt.set_xticks(range(FIELD_SIZE))
 
         #
         # Action: left
@@ -286,6 +298,7 @@ class Display(tk.Frame):
         prob_left_plt = self.fig_policy.add_subplot(224)
         prob_left_plt.set_title("Left")
         prob_left_plt.imshow(action_left, vmin=min_prob, vmax=max_prob)
-      
+        prob_left_plt.set_xticks(range(FIELD_SIZE))
+
         self.fig_policy.tight_layout()
         self.canvas_policy_plot.draw()

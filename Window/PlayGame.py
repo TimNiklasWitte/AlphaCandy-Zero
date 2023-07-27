@@ -226,7 +226,6 @@ def main():
     window.update_game_field()
 
     
-    
 
     # best_action, policy, value, done = mcts.step(return_policy=True)
     # print(list(policy))
@@ -235,18 +234,15 @@ def main():
         
         mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
 
+        window.reset_policy_statistics()
+        #window.update_policy_statistics_plot(zip(([], [])), 0, show=True)
+
         for num_mcts_step in range(NUM_MCTS_STEPS):
             
             if num_mcts_step % NUM_MCTS_SUB_STEPS_PLOT == 0:
                 
                 best_action, policy, value, done = mcts.step(return_policy=True)
 
-                # actions, probs = zip(*policy)
-
-                # print(actions, probs)
-                # policy_probs = np.reshape(policy_probs, newshape=(env.FIELD_SIZE, env.FIELD_SIZE))
-                # policy_probs = np.transpose(policy_probs)
-                # policy_probs = np.reshape(policy_probs, newshape=(-1,))
                 window.update_policy_plot(policy, num_mcts_step)
                 window.update_policy_statistics_plot(policy, num_mcts_step, show=True)
 
@@ -256,6 +252,10 @@ def main():
                 
                 window.update_policy_statistics_plot(policy, num_mcts_step, show=False)
 
+        
+
+        best_action, policy, value, done = mcts.step(return_policy=True)
+        window.update_policy_statistics_plot(policy, NUM_MCTS_STEPS, show=True)
         window.update_policy_plot(policy, NUM_MCTS_STEPS)
 
   
