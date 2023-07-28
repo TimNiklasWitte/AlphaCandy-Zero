@@ -266,7 +266,7 @@ class Display(tk.Frame):
             collected_rewards_part = self.collected_rewards[max(0, self.step_cnt - 50):self.step_cnt]
             mean_collected_rewards_part = np.mean(collected_rewards_part)
             plt_reward_statistics.axhline(mean_collected_rewards_part, color='r', linestyle="--", label="Mean")
-            plt_reward_statistics.legend(loc='upper right')
+            plt_reward_statistics.legend()
 
             plt_reward_statistics.xaxis.set_major_locator(MaxNLocator(integer=True))
 
@@ -280,7 +280,7 @@ class Display(tk.Frame):
             plt_value_statistics.plot(self.steps_reward, self.values, color="orange", label="Ground truth")
             plt_value_statistics.plot(self.steps_reward, self.predicted_values, color="green", label="Prediction")
             
-            plt_value_statistics.legend(loc='upper right')
+            plt_value_statistics.legend()
 
         self.fig_reward_statistics.tight_layout()
         self.canvas_reward_statistics_plot.draw()
