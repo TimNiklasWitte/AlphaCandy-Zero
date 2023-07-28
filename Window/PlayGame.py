@@ -211,6 +211,7 @@ def main():
     policyValueNetwork.load_weights(f"../saved_model/trained_weights_3").expect_partial()
    
     seed = np.random.randint(0, 500000)
+    print(seed)
     env = CandyCrushGym(seed)
 
     # isValidAction(4)
@@ -244,22 +245,25 @@ def main():
                 best_action, policy, value, done = mcts.step(return_policy=True)
 
                 window.update_policy_plot(policy, num_mcts_step)
-                window.update_policy_statistics_plot(policy, num_mcts_step, show=True)
+                window.update_policy_value_statistics_plot(policy, value, num_mcts_step, show=True)
 
                 
             else:
                 best_action, policy, value, done = mcts.step(return_policy=True)
                 
-                window.update_policy_statistics_plot(policy, num_mcts_step, show=False)
+                window.update_policy_value_statistics_plot(policy, value, num_mcts_step, show=False)
 
-        
 
         best_action, policy, value, done = mcts.step(return_policy=True)
-        window.update_policy_statistics_plot(policy, NUM_MCTS_STEPS, show=True)
+        window.update_policy_value_statistics_plot(policy, value, NUM_MCTS_STEPS, show=True)
         window.update_policy_plot(policy, NUM_MCTS_STEPS)
 
-  
+
+        print(env.state)
+
         reward = display_execute_action(best_action, env, window)
+        print("--------")
+        print(env.state)
         window.update_reward_statistics_plot(reward, num_step)
 
     #state = stateToImageConverter(state)

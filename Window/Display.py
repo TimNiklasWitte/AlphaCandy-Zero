@@ -32,7 +32,7 @@ class Display(tk.Frame):
 
         if show_plots:
             self.window_height = env.FIELD_SIZE * self.image_size + 250
-            self.window_width = env.FIELD_SIZE * self.image_size + 1000
+            self.window_width = env.FIELD_SIZE * self.image_size + 1250
         else:
             self.window_height = env.FIELD_SIZE * self.image_size
             self.window_width = env.FIELD_SIZE * self.image_size
@@ -75,7 +75,7 @@ class Display(tk.Frame):
             self.frame_policy_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
             self.frame_policy_statistics_plot.pack(side=TOP, fill=tk.BOTH, expand=True)
 
-            self.fig_policy_statistics = Figure(figsize=(3, 4), dpi=100)
+            self.fig_policy_statistics = Figure(figsize=(6.5, 4), dpi=100)
             self.canvas_policy_statistics_plot = FigureCanvasTkAgg(self.fig_policy_statistics, master=self.frame_policy_statistics_plot)
             self.canvas_policy_statistics_plot.get_tk_widget().pack(side=TOP,fill=tk.BOTH, expand=True)
 
@@ -84,7 +84,7 @@ class Display(tk.Frame):
             self.frame_reward_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
             self.frame_reward_statistics_plot.pack(side=BOTTOM, fill=tk.BOTH, expand=True)
 
-            self.fig_reward_statistics = Figure(figsize=(3, 4), dpi=100)
+            self.fig_reward_statistics = Figure(figsize=(4, 4), dpi=100)
             self.canvas_reward_statistics_plot = FigureCanvasTkAgg(self.fig_reward_statistics, master=self.frame_policy_statistics_plot)
             self.canvas_reward_statistics_plot.get_tk_widget().pack(side=BOTTOM,fill=tk.BOTH, expand=True)
 
@@ -102,6 +102,8 @@ class Display(tk.Frame):
         self.policy_diffs = []
         self.previous_policy = None
 
+        self.previous_value = 0
+        self.value_diffs = []
 
     def update_game_field(self):
         
@@ -156,7 +158,10 @@ class Display(tk.Frame):
         self.previous_policy = None 
         self.policy_diffs = []
 
-    def update_policy_statistics_plot(self, policy, num_mcts_step, show=False):
+        self.previous_value = 0
+        self.value_diffs = []
+
+    def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False):
 
         actions, probs = zip(*policy)
 
@@ -164,27 +169,41 @@ class Display(tk.Frame):
         if len(self.steps_mcts) == 0:
             self.previous_policy = probs
             self.steps_mcts.append(num_mcts_step)
+
+            self.previous_value = value
             return 
         
        
         diff_policy = np.abs(probs - self.previous_policy)
         self.previous_policy = probs
 
-        avg_diff = np.average(diff_policy)
+        avg_diff = np.sum(diff_policy)
         self.policy_diffs.append(avg_diff)
         self.steps_mcts.append(num_mcts_step)
 
+        value_diff = np.abs(value - self.previous_value)
+
+        self.previous_value = value
     
+        self.value_diffs.append(value_diff)
+
         if show:
             self.fig_policy_statistics.clf()
 
             plt_policy_statistics = self.fig_policy_statistics.subplots(1)
-            plt_policy_statistics.plot(self.steps_mcts[:-1], self.policy_diffs)
+            plt_policy_statistics.plot(self.steps_mcts[:-1], self.policy_diffs, color="r")
+
+    
             plt_policy_statistics.set_xlim(left=0, right=NUM_MCTS_STEPS)
-            plt_policy_statistics.set_title("Changes in the policy $\pi(a|s)$ \n$ \Delta \pi(t) = \\frac{1}{|a|} \sum_a | \pi(a|s)_t - \pi(a|s)_{t-1} |$ \n $ \Delta v(t) = |v(s)_t - v(s)_{t-1}|$") 
+            plt_policy_statistics.set_title("Policy changes $\Delta \pi(t) = \sum_a | \pi(a|s)_t - \pi(a|s)_{t-1} |$ \n State value changes $ \Delta v(t) = |v(s)_t - v(s)_{t-1}|$") 
             plt_policy_statistics.set_xlabel("MCTS step t")
-            plt_policy_statistics.set_ylabel("$\Delta \pi(t)$")
+            plt_policy_statistics.set_ylabel("$\Delta \pi(t)$", color="r")
             plt_policy_statistics.grid(True)
+
+            plt_value_statistics = plt_policy_statistics.twinx()
+
+            plt_value_statistics.plot(self.steps_mcts[:-1], self.value_diffs, color="b")
+            plt_value_statistics.set_ylabel("$\Delta v(t)$", color="b")
 
             self.fig_policy_statistics.tight_layout()
             self.canvas_policy_statistics_plot.draw()
@@ -266,13 +285,15 @@ class Display(tk.Frame):
         max_prob = np.max(probs)
         
         self.fig_policy.clf()
-        self.fig_policy.suptitle(f"MCTS steps: {num_mcts_step}/{NUM_MCTS_STEPS}")
+        self.fig_policy.suptitle(f"Policy $\pi$(a=({{top, right, down, left}}, x, y)|s) \nMCTS steps: {num_mcts_step}/{NUM_MCTS_STEPS}")
 
         #
         # Action: Top
         #
         prob_top_plt = self.fig_policy.add_subplot(221)
         prob_top_plt.set_title("Top")
+        prob_top_plt.set_xlabel("x")
+        prob_top_plt.set_ylabel("y")
         prob_top_plt.imshow(action_top, vmin=min_prob, vmax=max_prob)
         prob_top_plt.set_xticks(range(FIELD_SIZE))
        
@@ -281,6 +302,8 @@ class Display(tk.Frame):
         #
         prob_right_plt = self.fig_policy.add_subplot(222)
         prob_right_plt.set_title("Right")
+        prob_right_plt.set_xlabel("x")
+        prob_right_plt.set_ylabel("y")
         prob_right_plt.imshow(action_right, vmin=min_prob, vmax=max_prob)
         prob_right_plt.set_xticks(range(FIELD_SIZE))
 
@@ -289,6 +312,8 @@ class Display(tk.Frame):
         #
         prob_down_plt = self.fig_policy.add_subplot(223)
         prob_down_plt.set_title("Down")
+        prob_down_plt.set_xlabel("x")
+        prob_down_plt.set_ylabel("y")
         prob_down_plt.imshow(action_down, vmin=min_prob, vmax=max_prob)
         prob_down_plt.set_xticks(range(FIELD_SIZE))
 
@@ -297,6 +322,8 @@ class Display(tk.Frame):
         #
         prob_left_plt = self.fig_policy.add_subplot(224)
         prob_left_plt.set_title("Left")
+        prob_left_plt.set_xlabel("x")
+        prob_left_plt.set_ylabel("y")
         prob_left_plt.imshow(action_left, vmin=min_prob, vmax=max_prob)
         prob_left_plt.set_xticks(range(FIELD_SIZE))
 
