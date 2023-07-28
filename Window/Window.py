@@ -48,8 +48,6 @@ class Window:
     def reset_policy_statistics(self):
         self.display.reset_policy_statistics()
 
-    def update_reward_statistics_plot(self, reward, num_step):
-        self.display.update_reward_statistics_plot(reward, num_step)
+    def update_reward_value_statistics_plot(self, reward, value, predicted_value, num_step, init=False):
+        self.display.update_reward_value_statistics_plot(reward, value, predicted_value, num_step, init)
 
-    # def update_mcts_plot(self, reward):
-    #     self.

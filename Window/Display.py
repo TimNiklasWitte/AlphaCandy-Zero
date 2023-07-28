@@ -66,27 +66,32 @@ class Display(tk.Frame):
             self.canvas_policy_plot.get_tk_widget().pack(side=LEFT, fill=tk.BOTH, expand=True)
 
             # 
-            # Statistics_plots
+            # Statistics plots
             # 
+
+            ## Top
             self.frame_statistics_plots = tk.Frame(master=self.frame_plot)
             self.frame_statistics_plots.pack(side=RIGHT, fill=tk.BOTH, expand=True)
 
-            # Policy statistics
-            self.frame_policy_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
-            self.frame_policy_statistics_plot.pack(side=TOP, fill=tk.BOTH, expand=True)
+            # Policy state value statistics
+            self.frame_policy_value_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
+            self.frame_policy_value_statistics_plot.pack(side=TOP, fill=tk.BOTH, expand=True)
 
-            self.fig_policy_statistics = Figure(figsize=(6.5, 4), dpi=100)
-            self.canvas_policy_statistics_plot = FigureCanvasTkAgg(self.fig_policy_statistics, master=self.frame_policy_statistics_plot)
-            self.canvas_policy_statistics_plot.get_tk_widget().pack(side=TOP,fill=tk.BOTH, expand=True)
+            self.fig_policy_value_statistics = Figure(figsize=(6.5, 4), dpi=100)
+            self.canvas_policy_value_statistics_plot = FigureCanvasTkAgg(self.fig_policy_value_statistics, master=self.frame_policy_value_statistics_plot)
+            self.canvas_policy_value_statistics_plot.get_tk_widget().pack(side=TOP,fill=tk.BOTH, expand=True)
 
-            # Reward statistics
+            ## Down/Bottom
+            # Reward value statistics
 
-            self.frame_reward_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
-            self.frame_reward_statistics_plot.pack(side=BOTTOM, fill=tk.BOTH, expand=True)
+            self.frame_reward_value_statistics_plot = tk.Frame(master=self.frame_statistics_plots)
+            self.frame_reward_value_statistics_plot.pack(side=BOTTOM, fill=tk.BOTH, expand=True)
 
             self.fig_reward_statistics = Figure(figsize=(4, 4), dpi=100)
-            self.canvas_reward_statistics_plot = FigureCanvasTkAgg(self.fig_reward_statistics, master=self.frame_policy_statistics_plot)
-            self.canvas_reward_statistics_plot.get_tk_widget().pack(side=BOTTOM,fill=tk.BOTH, expand=True)
+            self.canvas_reward_statistics_plot = FigureCanvasTkAgg(self.fig_reward_statistics, master=self.frame_reward_value_statistics_plot)
+            self.canvas_reward_statistics_plot.get_tk_widget().pack(side=RIGHT,fill=tk.BOTH, expand=True)
+
+            
 
         self.step_cnt = 0
         self.collected_rewards = []
@@ -104,6 +109,10 @@ class Display(tk.Frame):
 
         self.previous_value = 0
         self.value_diffs = []
+
+
+        self.values = []
+        self.predicted_values = []
 
     def update_game_field(self):
         
@@ -188,9 +197,9 @@ class Display(tk.Frame):
         self.value_diffs.append(value_diff)
 
         if show:
-            self.fig_policy_statistics.clf()
+            self.fig_policy_value_statistics.clf()
 
-            plt_policy_statistics = self.fig_policy_statistics.subplots(1)
+            plt_policy_statistics = self.fig_policy_value_statistics.subplots(1)
             plt_policy_statistics.plot(self.steps_mcts[:-1], self.policy_diffs, color="r")
 
     
@@ -205,42 +214,73 @@ class Display(tk.Frame):
             plt_value_statistics.plot(self.steps_mcts[:-1], self.value_diffs, color="b")
             plt_value_statistics.set_ylabel("$\Delta v(t)$", color="b")
 
-            self.fig_policy_statistics.tight_layout()
-            self.canvas_policy_statistics_plot.draw()
+            self.fig_policy_value_statistics.tight_layout()
+            self.canvas_policy_value_statistics_plot.draw()
 
-            # and state value $v(s)$ given current state s \n
-            # $ \Delta \v(t) = | v(s)_t - v(s)_{t-1}|$
-    def update_reward_statistics_plot(self, reward, num_step):
-        
-        self.step_cnt += 1
 
-        self.collected_rewards.append(reward)
-        self.steps_reward.append(num_step)
+
+    def update_reward_value_statistics_plot(self, reward, value, predicted_value, num_step, init=False):
         
         self.fig_reward_statistics.clf()
 
-     
-        plt_reward_statistics = self.fig_reward_statistics.subplots(1)
-      
-        plt_reward_statistics.plot(self.steps_reward, self.collected_rewards, label="Reward")
+        
+        #
+        # Reward
+        #
+        plt_reward_statistics, plt_value_statistics = self.fig_reward_statistics.subplots(1, 2)
         plt_reward_statistics.set_xlim(left=max(0, self.step_cnt - 10), right=self.step_cnt + 10)
      
         plt_reward_statistics.set_title("Obtained rewards")
         plt_reward_statistics.set_xlabel("Step")
         plt_reward_statistics.set_ylabel("Reward")
         plt_reward_statistics.grid(True)
-     
-
-        # Plot mean of collected rewards (not all! only of displayed)
-        collected_rewards_part = self.collected_rewards[max(0, self.step_cnt - 50):self.step_cnt]
-        mean_collected_rewards_part = np.mean(collected_rewards_part)
-        plt_reward_statistics.axhline(mean_collected_rewards_part, color='r', linestyle="--", label="Mean")
-        plt_reward_statistics.legend(loc='lower right')
 
         plt_reward_statistics.xaxis.set_major_locator(MaxNLocator(integer=True))
 
+        #
+        # Value
+        #
+        plt_value_statistics.set_xlim(left=max(0, self.step_cnt - 10), right=self.step_cnt + 10)
+     
+        plt_value_statistics.set_title("State value")
+        plt_value_statistics.set_xlabel("Step")
+        plt_value_statistics.set_ylabel("Discounted return")
+        plt_value_statistics.grid(True)
+
+        plt_value_statistics.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+        if not init:
+            self.collected_rewards.append(reward)
+            self.steps_reward.append(num_step)
+
+            self.step_cnt += 1
+
+            #
+            # reward
+            #
+
+            plt_reward_statistics.plot(self.steps_reward, self.collected_rewards, label="Reward")
+
+    
+            # Plot mean of collected rewards (not all! only of displayed)
+            collected_rewards_part = self.collected_rewards[max(0, self.step_cnt - 50):self.step_cnt]
+            mean_collected_rewards_part = np.mean(collected_rewards_part)
+            plt_reward_statistics.axhline(mean_collected_rewards_part, color='r', linestyle="--", label="Mean")
+            plt_reward_statistics.legend(loc='upper right')
+
+            plt_reward_statistics.xaxis.set_major_locator(MaxNLocator(integer=True))
 
 
+            self.values.append(value)
+            self.predicted_values.append(predicted_value)
+
+            #
+            # value
+            #
+            plt_value_statistics.plot(self.steps_reward, self.values, color="orange", label="Ground truth")
+            plt_value_statistics.plot(self.steps_reward, self.predicted_values, color="green", label="Prediction")
+            
+            plt_value_statistics.legend(loc='upper right')
 
         self.fig_reward_statistics.tight_layout()
         self.canvas_reward_statistics_plot.draw()

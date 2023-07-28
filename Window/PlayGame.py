@@ -210,7 +210,7 @@ def main():
     policyValueNetwork = PolicyValueNetwork()
     policyValueNetwork.load_weights(f"../saved_model/trained_weights_3").expect_partial()
    
-    seed = np.random.randint(0, 500000)
+    seed = 34326 #np.random.randint(0, 500000)
     print(seed)
     env = CandyCrushGym(seed)
 
@@ -231,12 +231,16 @@ def main():
     # best_action, policy, value, done = mcts.step(return_policy=True)
     # print(list(policy))
 
+    window.update_reward_value_statistics_plot(0, 0, 0, 0, init=True)
+
     for num_step in range(10):
         
         mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
 
         window.reset_policy_statistics()
         #window.update_policy_statistics_plot(zip(([], [])), 0, show=True)
+
+        
 
         for num_mcts_step in range(NUM_MCTS_STEPS):
             
@@ -255,16 +259,24 @@ def main():
 
 
         best_action, policy, value, done = mcts.step(return_policy=True)
+
         window.update_policy_value_statistics_plot(policy, value, NUM_MCTS_STEPS, show=True)
         window.update_policy_plot(policy, NUM_MCTS_STEPS)
+        
 
+     
 
         print(env.state)
 
         reward = display_execute_action(best_action, env, window)
         print("--------")
         print(env.state)
-        window.update_reward_statistics_plot(reward, num_step)
+
+        state_img = stateToImageConverter(env.state)
+        state_img = tf.expand_dims(state_img, axis=0) # add batch dim
+        policy, predicated_value = policyValueNetwork(state_img)
+        predicated_value = predicated_value[0] # remove batch dim
+        window.update_reward_value_statistics_plot(reward, value, predicated_value, num_step)
 
     #state = stateToImageConverter(state)
 
