@@ -34,8 +34,8 @@ import tensorflow as tf
 
 from PlayGameConfig import *
 
-show_arrow_time = 1
-show_swap_time = 1
+show_arrow_time = 2
+show_swap_time = 2
 show_empty_time = 1
 drop_candy_time = 0.03
 
@@ -210,7 +210,7 @@ def main():
     policyValueNetwork = PolicyValueNetwork()
     policyValueNetwork.load_weights(f"../saved_model/trained_weights_3").expect_partial()
    
-    seed = 34326 #np.random.randint(0, 500000)
+    seed = np.random.randint(0, 500000)
     print(seed)
     env = CandyCrushGym(seed)
 
@@ -233,7 +233,7 @@ def main():
 
     window.update_reward_value_statistics_plot(0, 0, 0, 0, init=True)
 
-    for num_step in range(10):
+    for num_step in range(30):
         
         mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
 

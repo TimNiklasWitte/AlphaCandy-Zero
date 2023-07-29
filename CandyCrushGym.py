@@ -182,9 +182,22 @@ class CandyCrushGym(gym.Env):
         # Horizontal or vertical
         #
 
-        reward += self.react_horizontal_vertical(list_rows_swap, list_columns_swap)
-        reward += self.react_horizontal_vertical(list_rows, list_columns)
-        
+        reward_stripped_candy = self.react_horizontal_vertical(list_rows_swap, list_columns_swap)
+
+        if reward_stripped_candy != 0:
+            self.state[y_swap, x_swap] = -1
+            self.columns_to_fill.add(x_swap)
+            
+        reward += reward_stripped_candy
+
+
+        reward_stripped_candy += self.react_horizontal_vertical(list_rows, list_columns)
+        if reward_stripped_candy != 0:
+            self.state[y, x] = -1
+            self.columns_to_fill.add(x)
+            
+        reward += reward_stripped_candy
+
         #
         # Five candys: T or L shape
         #
@@ -205,10 +218,11 @@ class CandyCrushGym(gym.Env):
         #
         # Three candys in a line (column or row)
         #
-      
+
+
         reward += self.reactThreeCandys(list_rows_swap, list_columns_swap)
         reward += self.reactThreeCandys(list_rows, list_columns)
-        
+ 
      
         return reward
 
@@ -726,7 +740,7 @@ class CandyCrushGym(gym.Env):
             if id == swapped_candyID:
                 self.state[max(y-1, self.CANDY_BUFF_HEIGHT):min(y+2, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT -1), max(x-1, 0):min(x+2, self.FIELD_SIZE -1)] = -1
                 
-                for i in range(max(x-1, self.CANDY_BUFF_HEIGHT),min(x+2, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT)):
+                for i in range(max(x-1, self.CANDY_BUFF_HEIGHT),min(x+2, self.FIELD_SIZE)):
                     self.columns_to_fill.add(i)
 
                 return 1
@@ -843,6 +857,8 @@ class CandyCrushGym(gym.Env):
     def reactThreeCandys(self, list_rows, list_columns):
         state = np.copy(self.state)
 
+       
+
         if len(list_columns) == 3:
             for y0, x0 in list_columns:
 
@@ -854,10 +870,12 @@ class CandyCrushGym(gym.Env):
                 self.columns_to_fill.add(x0) 
             return 0.25
 
+        
         elif len(list_rows) == 3:
             for y0, x0 in list_rows:
                 
                 if self.state[y0, x0] == -1:
+                    print("break")
                     self.state = state
                     return 0 
 
