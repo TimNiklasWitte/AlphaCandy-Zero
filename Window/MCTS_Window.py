@@ -4,6 +4,7 @@ from CandyCrushGym import *
 from Config import *
 
 from Utils import *
+from CandyCrushUtiles import *
 
 class Node:
     def __init__(self, parent, state, action, reward):
@@ -50,10 +51,10 @@ class MCTS_Window:
         self.discount_factors = np.array([self.gamma**i for i in range(self.NUM_ROLLOUT_STEPS)])
 
 
-        valid_actions = [action for action in range(self.env.action_space.n) if self.env.isValidAction(action)]
+        valid_actions = [action for action in range(self.env.action_space.n) if isValidAction(action)]
         self.valid_actions = np.array(valid_actions)
 
-        invalid_actions = [action for action in range(self.env.action_space.n) if not self.env.isValidAction(action)]
+        invalid_actions = [action for action in range(self.env.action_space.n) if not isValidAction(action)]
         self.invalid_actions = np.array(invalid_actions)
 
         self.policyValueNetwork = policyValueNetwork

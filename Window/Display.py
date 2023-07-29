@@ -123,10 +123,10 @@ class Display(tk.Frame):
 
                 if candyID == -1:
                     self.images[y*self.env.FIELD_SIZE + x] = None
-                    self.previous_state[y,x] = -1
+                    self.previous_state[y + self.env.CANDY_BUFF_HEIGHT,x] = -1
                     continue
 
-                if self.previous_state[y,x] == candyID:
+                if self.previous_state[y + self.env.CANDY_BUFF_HEIGHT,x] == candyID:
                     continue
                 
                 if isNormalCandy(candyID):
@@ -151,7 +151,7 @@ class Display(tk.Frame):
                 elif candyID == COLOR_BOMB_CANDY_ID:
                     image = tk.PhotoImage(file=f"{self.root_img_path}/ColourBomb/ColourBomb.png")
                 
-                if self.previous_state[y,x] == 0:
+                if self.previous_state[y + self.env.CANDY_BUFF_HEIGHT,x] == 0:
                     self.images.append(image)
                 else:
                     self.images[y*self.env.FIELD_SIZE + x] = image
@@ -159,7 +159,7 @@ class Display(tk.Frame):
                 candy = self.canvas.create_image(x*self.image_size, y*self.image_size, image=image, anchor=NW)
                 self.candies.append(candy)
 
-                self.previous_state[y,x] = candyID
+                self.previous_state[y + self.env.CANDY_BUFF_HEIGHT,x] = candyID
 
 
     def reset_policy_statistics(self):

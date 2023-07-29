@@ -40,37 +40,10 @@ class CandyCrushGym(gym.Env):
     
         return self.state
 
-    def isValidAction(self, action):
-
-        fieldID = action // self.NUM_DIRECTIONS
-
-        direction = action % self.NUM_DIRECTIONS
-
-        x = fieldID // self.FIELD_SIZE
-        y = fieldID % self.FIELD_SIZE
-
-        # Swap candy
-        x_swap = x # attention: numpy x->y are swapped
-        y_swap = y # attention: numpy x->y are swapped
-        # top
-        if direction == 0:
-            y_swap += -1
-        # down
-        elif direction == 2: 
-            y_swap += 1
-        # right 
-        elif direction == 1:
-            x_swap += 1
-        # left 
-        elif direction == 3:
-            x_swap += -1
-
-        return self.isValidIndex(x,y) and self.isValidIndex(x_swap, y_swap)
-           
-
+    
     def step(self, action):
         
-        if not self.isValidAction(action):
+        if not isValidAction(action):
             raise ValueError("Invalid action")
 
         fieldID = action // self.NUM_DIRECTIONS
@@ -177,8 +150,8 @@ class CandyCrushGym(gym.Env):
                     isMatch = True
    
         if isMatch:
-            self.state[max(y_swap-1, self.CANDY_BUFF_HEIGHT):min(y_swap+2, self.FIELD_SIZE -1), :] = -1
-            self.state[:, max(x_swap-1,0):min(x_swap+2,self.FIELD_SIZE - 1)] = -1
+            self.state[max(y_swap-1, self.CANDY_BUFF_HEIGHT):min(y_swap+2, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT - 1), :] = -1
+            self.state[self.CANDY_BUFF_HEIGHT:, max(x_swap-1,0):min(x_swap+2,self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT - 1)] = -1
 
             for i in range(0, self.FIELD_SIZE):
                 self.columns_to_fill.add(i)
@@ -188,19 +161,21 @@ class CandyCrushGym(gym.Env):
         list_rows, list_columns = self.scanRowsColums(x,y, candy_id)
         list_rows_swap, list_columns_swap = self.scanRowsColums(x_swap,y_swap, swapped_candyID)
 
+     
         #
         # Five candy in a row/column -> create color bomb candy
         #
 
         reward += self.reactFiveCandys(x_swap, y_swap, list_rows_swap, list_columns_swap)
-        reward += self.reactFiveCandys(x_swap, y_swap, list_rows, list_columns)
+        reward += self.reactFiveCandys(x, y, list_rows, list_columns)
 
+    
         #
         # Wrapped candy + candy (same color)
         #
 
         reward += self.reactWrappedCandy(swapped_candyID, x_swap, y_swap, candy_id)
-        reward += self.reactWrappedCandy(candy_id, x_swap, y_swap, swapped_candyID)
+        reward += self.reactWrappedCandy(candy_id, x, y, swapped_candyID)
         
 
         #
@@ -215,7 +190,7 @@ class CandyCrushGym(gym.Env):
         #
 
         reward_l_t_1 = self.react_t_l_shape(swapped_candyID, x_swap, y_swap, list_rows_swap, list_columns_swap)
-        reward_l_t_2 = self.react_t_l_shape(candy_id, x_swap, y_swap, list_rows, list_columns)
+        reward_l_t_2 = self.react_t_l_shape(candy_id, x, y, list_rows, list_columns)
 
         if reward_l_t_1 + reward_l_t_2 != 0:
             return reward + reward_l_t_1 + reward_l_t_2
@@ -225,15 +200,16 @@ class CandyCrushGym(gym.Env):
         #
         
         reward += self.reactFourCandys(swapped_candyID, x_swap, y_swap, list_rows_swap, list_columns_swap)
-        reward += self.reactFourCandys(candy_id, x_swap, y_swap, list_rows, list_columns)
+        reward += self.reactFourCandys(candy_id, x, y, list_rows, list_columns)
         
         #
         # Three candys in a line (column or row)
         #
-
+      
         reward += self.reactThreeCandys(list_rows_swap, list_columns_swap)
         reward += self.reactThreeCandys(list_rows, list_columns)
         
+     
         return reward
 
     def is_T_shape(self, candy_id, list_rows, list_columns):
@@ -245,7 +221,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0
             # 0 1 0
             y0, x0 = list_rows[1]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0+2,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0+2):
                 if candy_id == self.state[y0+1,x0] == self.state[y0+2,x0]:
                     list_rows.append((y0+1,x0))
                     list_rows.append((y0+2,x0))
@@ -255,7 +231,7 @@ class CandyCrushGym(gym.Env):
             # 1 1 1
             # 1 0 0
             y0, x0 = list_rows[0]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0-1,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0-1):
                 if candy_id == self.state[y0+1,x0] == self.state[y0-1,x0]:
                     list_rows.append((y0+1,x0))
                     list_rows.append((y0-1,x0))
@@ -265,7 +241,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0
             # 1 1 1
             y0, x0 = list_rows[1]
-            if self.isValidIndex(y0-1,x0) and self.isValidIndex(y0-2,x0):
+            if isValidIndex(x0, y0-1) and isValidIndex(x0, y0-2):
                 if candy_id == self.state[y0-1,x0] == self.state[y0-2,x0]:
                     list_rows.append((y0-1,x0))
                     list_rows.append((y0-2,x0))
@@ -275,7 +251,7 @@ class CandyCrushGym(gym.Env):
             # 1 1 1
             # 0 0 1
             y0, x0 = list_rows[2]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0-1,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0-1):
                 if candy_id == self.state[y0+1,x0] == self.state[y0-1,x0]:
                     list_rows.append((y0+1,x0))
                     list_rows.append((y0-1,x0))
@@ -287,7 +263,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0 0
             # 0 1 0 0
             y0, x0 = list_rows[1]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0+2,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0+2):
                 if candy_id == self.state[y0+1,x0] == self.state[y0+2,x0]:
                     list_rows = list_rows[:-1]
                     list_rows.append((y0+1,x0))
@@ -298,7 +274,7 @@ class CandyCrushGym(gym.Env):
             # 1 1 1 1
             # 1 0 0 0
             y0, x0 = list_rows[0]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0-1,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0-1):
                 if candy_id == self.state[y0+1,x0] == self.state[y0-1,x0]:
                     list_rows = list_rows[:-1]
                     list_rows.append((y0+1,x0))
@@ -309,7 +285,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 1 0
             # 0 0 1 0
             y0, x0 = list_rows[2]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0+2,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0+2):
                 if candy_id == self.state[y0+1,x0] == self.state[y0+2,x0]:
                     list_rows = list_rows[1:]
                     list_rows.append((y0+1,x0))
@@ -320,7 +296,7 @@ class CandyCrushGym(gym.Env):
             # 1 1 1 1
             # 0 0 0 1
             y0, x0 = list_rows[3]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0-1,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0-1):
                 if candy_id == self.state[y0+1,x0] == self.state[y0-1,x0]:
                     list_rows = list_rows[1:]
                     list_rows.append((y0+1,x0))
@@ -331,7 +307,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0 0
             # 1 1 1 1
             y0, x0 = list_rows[1]
-            if self.isValidIndex(y0-1,x0) and self.isValidIndex(y0-2,x0):
+            if isValidIndex(x0, y0-1) and isValidIndex(x0, y0-2):
                 if candy_id == self.state[y0-1,x0] == self.state[y0-2,x0]:
                     list_rows = list_rows[:-1]
                     list_rows.append((y0-1,x0))
@@ -342,7 +318,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 1 0
             # 1 1 1 1
             y0, x0 = list_rows[2]
-            if self.isValidIndex(y0-1,x0) and self.isValidIndex(y0-2,x0):
+            if isValidIndex(x0, y0-1) and isValidIndex(x0, y0-2):
                 if candy_id == self.state[y0-1,x0] == self.state[y0-2,x0]:
                     list_rows = list_rows[1:]
                     list_rows.append((y0-1,x0))
@@ -356,7 +332,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0 
             # 0 1 0 
             y0, x0 = list_columns[0]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0+1):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0+1, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0+1]:
                     list_columns.append((y0,x0-1))
                     list_columns.append((y0,x0+1))
@@ -366,7 +342,7 @@ class CandyCrushGym(gym.Env):
             # 1 1 1 
             # 1 0 0 
             y0, x0 = list_columns[1]
-            if self.isValidIndex(y0,x0+1) and self.isValidIndex(y0,x0+2):
+            if isValidIndex(x0+1, y0) and isValidIndex(x0+2, y0):
                 if candy_id == self.state[y0,x0+1] == self.state[y0,x0+2]:
                     list_columns.append((y0,x0+1))
                     list_columns.append((y0,x0+2))
@@ -376,7 +352,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0 
             # 1 1 1
             y0, x0 = list_columns[2]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0+1):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0+1, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0+1]:
                     list_columns.append((y0,x0-1))
                     list_columns.append((y0,x0+1))
@@ -386,7 +362,7 @@ class CandyCrushGym(gym.Env):
             # 1 1 1 
             # 0 0 1
             y0, x0 = list_columns[1]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0-2):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0-2, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0-2]:
                     list_columns.append((y0,x0-1))
                     list_columns.append((y0,x0-2))
@@ -399,7 +375,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0 0
             # 0 1 0 0
             y0, x0 = list_columns[0]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0+1):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0+1, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0+1]:
                     list_columns = list_columns[:-1]
                     list_columns.append((y0,x0-1))
@@ -411,7 +387,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0 0
             # 0 1 0 0
             y0, x0 = list_columns[1]
-            if self.isValidIndex(y0,x0+1) and self.isValidIndex(y0,x0+2):
+            if isValidIndex(x0+1, y0) and isValidIndex(x0+2, y0):
                 if candy_id == self.state[y0,x0+1] == self.state[y0,x0+2]:
                     list_columns = list_columns[:-1]
                     list_columns.append((y0,x0+1))
@@ -423,7 +399,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 1 1
             # 0 1 0 0
             y0, x0 = list_columns[2]
-            if self.isValidIndex(y0,x0+1) and self.isValidIndex(y0,x0+2):
+            if isValidIndex(x0+1, y0) and isValidIndex(x0+2, y0):
                 if candy_id == self.state[y0,x0+1] == self.state[y0,x0+2]:
                     list_columns = list_columns[1:]
                     list_columns.append((y0,x0+1))
@@ -435,7 +411,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0 0
             # 1 1 1 0
             y0, x0 = list_columns[3]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0+1):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0+1,y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0+1]:
                     list_columns = list_columns[1:]
                     list_columns.append((y0,x0-1))
@@ -447,7 +423,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 1 0
             # 0 0 1 0
             y0, x0 = list_columns[1]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0-2):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0-2, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0-2]:
                     list_columns = list_columns[:-1]
                     list_columns.append((y0,x0-1))
@@ -459,7 +435,7 @@ class CandyCrushGym(gym.Env):
             # 1 1 1 0
             # 0 0 1 0
             y0, x0 = list_columns[2]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0-2):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0-2, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0-2]:
                     list_columns = list_columns[1:]
                     list_columns.append((y0,x0-1))
@@ -469,6 +445,7 @@ class CandyCrushGym(gym.Env):
         return False, []
 
     def is_L_shape(self, candy_id, list_rows, list_columns):
+        
    
         if len(list_rows) == 3:
 
@@ -476,7 +453,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0
             # 1 1 1
             y0, x0 = list_rows[0]
-            if self.isValidIndex(y0-1,x0) and self.isValidIndex(y0-2,x0):
+            if isValidIndex(x0, y0-1) and isValidIndex(x0, y0-2):
                 if candy_id == self.state[y0-1,x0] == self.state[y0-2,x0]:
                     list_rows.append((y0-1,x0))
                     list_rows.append((y0-2,x0))
@@ -486,7 +463,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0
             # 1 0 0
             y0, x0 = list_rows[0]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0+2,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0+2):
                 if candy_id == self.state[y0+1,x0] == self.state[y0+2,x0]:
                     list_rows.append((y0+1,x0))
                     list_rows.append((y0+2,x0))
@@ -496,7 +473,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 1
             # 0 0 1
             y0, x0 = list_rows[-1]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0+2,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0+2):
                 if candy_id == self.state[y0+1,x0] == self.state[y0+2,x0]:
                     list_rows.append((y0+1,x0))
                     list_rows.append((y0+2,x0))
@@ -505,8 +482,9 @@ class CandyCrushGym(gym.Env):
             # 0 0 1
             # 0 0 1
             # 1 1 1
+            
             y0, x0 = list_rows[2]
-            if self.isValidIndex(y0-1,x0) and self.isValidIndex(y0-2,x0):
+            if isValidIndex(x0, y0-1) and isValidIndex(x0, y0-2):
                 if candy_id == self.state[y0-1,x0] == self.state[y0-2,x0]:
                     list_rows.append((y0-1,x0))
                     list_rows.append((y0-2,x0))
@@ -518,7 +496,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0 0
             # 1 1 1 1
             y0, x0 = list_rows[0]
-            if self.isValidIndex(y0-1,x0) and self.isValidIndex(y0-2,x0):
+            if isValidIndex(x0, y0-1) and isValidIndex(x0, y0-2):
                 if candy_id == self.state[y0-1,x0] == self.state[y0-2,x0]:
                     list_rows = list_rows[:-1]
                     list_rows.append((y0-1,x0))
@@ -529,7 +507,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0 0
             # 1 0 0 0
             y0, x0 = list_rows[0]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0+2,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0+2):
                 if candy_id == self.state[y0+1,x0] == self.state[y0+2,x0]:
                     list_rows = list_rows[:-1]
                     list_rows.append((y0+1,x0))
@@ -540,7 +518,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 0 1
             # 0 0 0 1
             y0, x0 = list_rows[-1]
-            if self.isValidIndex(y0+1,x0) and self.isValidIndex(y0+2,x0):
+            if isValidIndex(x0, y0+1) and isValidIndex(x0, y0+2):
                 if candy_id == self.state[y0+1,x0] == self.state[y0+2,x0]:
                     list_rows = list_rows[1:]
                     list_rows.append((y0+1,x0))
@@ -551,7 +529,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 0 1
             # 1 1 1 1
             y0, x0 = list_rows[-1]
-            if self.isValidIndex(y0-1,x0) and self.isValidIndex(y0-2,x0):
+            if isValidIndex(x0, y0-1) and isValidIndex(x0, y0-2):
                 if candy_id == self.state[y0-1,x0] == self.state[y0-2,x0]:
                     list_rows = list_rows[1:]
                     list_rows.append((y0-1,x0))
@@ -565,7 +543,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0
             # 1 1 1
             y0, x0 = list_columns[-1]
-            if self.isValidIndex(y0,x0+1) and self.isValidIndex(y0,x0+2):
+            if isValidIndex(x0+1, y0) and isValidIndex(x0+2, y0):
                 if candy_id == self.state[y0,x0+1] == self.state[y0,x0+2]:
                     list_columns.append((y0,x0+1))
                     list_columns.append((y0,x0+2))
@@ -575,7 +553,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0
             # 1 0 0
             y0, x0 = list_columns[0]
-            if self.isValidIndex(y0,x0+1) and self.isValidIndex(y0,x0+2):
+            if isValidIndex(x0+1, y0) and isValidIndex(x0+2, y0):
                 if candy_id == self.state[y0,x0+1] == self.state[y0,x0+2]:
                     list_columns.append((y0,x0+1))
                     list_columns.append((y0,x0+2))
@@ -585,7 +563,7 @@ class CandyCrushGym(gym.Env):
             # 0 1 0
             # 0 1 0
             y0, x0 = list_columns[0]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0-2):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0-2, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0-2]:
                     list_columns.append((y0,x0-1))
                     list_columns.append((y0,x0-2))
@@ -595,7 +573,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 1
             # 1 1 1
             y0, x0 = list_columns[-1]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0-2):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0-2, y0,):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0-2]:
                     list_columns.append((y0,x0-1))
                     list_columns.append((y0,x0-2))
@@ -608,7 +586,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0
             # 1 1 1
             y0, x0 = list_columns[-1]
-            if self.isValidIndex(y0,x0+1) and self.isValidIndex(y0,x0+2):
+            if isValidIndex(x0+1, y0) and isValidIndex(x0+2, y0):
                 if candy_id == self.state[y0,x0+1] == self.state[y0,x0+2]:
                     list_columns = list_columns[1:]
                     list_columns.append((y0,x0+1))
@@ -620,7 +598,7 @@ class CandyCrushGym(gym.Env):
             # 1 0 0
             # 1 0 0
             y0, x0 = list_columns[0]
-            if self.isValidIndex(y0,x0+1) and self.isValidIndex(y0,x0+2):
+            if isValidIndex(x0+1, y0) and isValidIndex(x0+2, y0):
                 if candy_id == self.state[y0,x0+1] == self.state[y0,x0+2]:
                     list_columns = list_columns[:-1]
                     list_columns.append((y0,x0+1))
@@ -632,7 +610,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 1
             # 0 0 1
             y0, x0 = list_columns[0]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0-2):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0-2, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0-2]:
                     list_columns = list_columns[:-1]
                     list_columns.append((y0,x0-1))
@@ -644,7 +622,7 @@ class CandyCrushGym(gym.Env):
             # 0 0 1
             # 1 1 1
             y0, x0 = list_columns[-1]
-            if self.isValidIndex(y0,x0-1) and self.isValidIndex(y0,x0-2):
+            if isValidIndex(x0-1, y0) and isValidIndex(x0-2, y0):
                 if candy_id == self.state[y0,x0-1] == self.state[y0,x0-2]:
                     list_columns = list_columns[1:]
                     list_columns.append((y0,x0-1))
@@ -652,14 +630,6 @@ class CandyCrushGym(gym.Env):
                     return True, list_columns
 
         return False, []
-
-    def isValidIndex(self, x, y):
-        if self.FIELD_SIZE <= x or self.FIELD_SIZE <= y or x < 0 or y < 0:
-            return False
-        
-        return True
-
-    
 
     def reactToColorBomb(self, x,y, candy_id, x_swap, y_swap):
         if candy_id == self.COLOR_BOMB_CANDY_ID:
@@ -669,7 +639,7 @@ class CandyCrushGym(gym.Env):
 
             cnt = 0
             for x0 in range(self.FIELD_SIZE):
-                for y0 in range(self.CANDY_BUFF_HEIGHT, self.FIELD_SIZE):
+                for y0 in range(self.CANDY_BUFF_HEIGHT, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT):
 
                     if self.state[y0, x0] == kill_allCandys_ID:
                         self.state[y0, x0] = -1
@@ -685,15 +655,15 @@ class CandyCrushGym(gym.Env):
         list_columns = []
 
         # count number of candys in a row
-        for i in range(0, self.FIELD_SIZE - x):
-
-            if equalCandys(self.state[y, x+i], candy_id):
-                list_rows.append((y,x+i))
+        for i in range(x, self.FIELD_SIZE):
+            
+            if equalCandys(self.state[y, i], candy_id):
+                list_rows.append((y,i))    
             else:
                 break
 
         for i in reversed(range(0, x)):
-        
+ 
             if equalCandys(self.state[y, i], candy_id):
                 list_rows.append((y,i))
             else:
@@ -701,15 +671,15 @@ class CandyCrushGym(gym.Env):
         
 
         # count number of candys in a column
-        for i in range(self.CANDY_BUFF_HEIGHT, self.FIELD_SIZE - y):
+        for i in range(y, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT):
             
-            if equalCandys(self.state[y + i, x], candy_id):
-                list_columns.append((y+i,x))
+            if equalCandys(self.state[i, x], candy_id):
+                list_columns.append((i,x))
             else:
                 break
 
         for i in reversed(range(self.CANDY_BUFF_HEIGHT, y)):
-            
+           
             if equalCandys(self.state[i, x], candy_id):
                 list_columns.append((i,x))
             else:
@@ -719,8 +689,8 @@ class CandyCrushGym(gym.Env):
 
     def reactFiveCandys(self, x, y, list_rows, list_columns):
 
-        state = self.state 
-
+        state = np.copy(self.state)
+        
         if len(list_columns) == 5:
             for y0,x0 in list_columns:
 
@@ -732,7 +702,8 @@ class CandyCrushGym(gym.Env):
                 self.columns_to_fill.add(x0)
             self.state[y, x] = self.COLOR_BOMB_CANDY_ID
             return 1.5
- 
+
+
         if len(list_rows) == 5:
             for y0,x0 in list_rows:
 
@@ -753,9 +724,9 @@ class CandyCrushGym(gym.Env):
             id = convertWrappedCandy_toNormal(candy_id)
 
             if id == swapped_candyID:
-                self.state[max(y-1, self.CANDY_BUFF_HEIGHT):min(y+2, self.FIELD_SIZE -1), max(x-1, 0):min(x+2, self.FIELD_SIZE -1)] = -1
+                self.state[max(y-1, self.CANDY_BUFF_HEIGHT):min(y+2, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT -1), max(x-1, 0):min(x+2, self.FIELD_SIZE -1)] = -1
                 
-                for i in range(max(x-1, self.CANDY_BUFF_HEIGHT),min(x+2, self.FIELD_SIZE)):
+                for i in range(max(x-1, self.CANDY_BUFF_HEIGHT),min(x+2, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT)):
                     self.columns_to_fill.add(i)
 
                 return 1
@@ -766,7 +737,7 @@ class CandyCrushGym(gym.Env):
         if 2 <= len(list_columns):
             for y0,x0 in list_columns:
                 if isVerticalStrippedCandy(self.state[y0, x0]):
-                    self.state[:, x0] = -1
+                    self.state[self.CANDY_BUFF_HEIGHT:, x0] = -1
                     self.columns_to_fill.add(x0)
                     return 1
                 
@@ -781,7 +752,7 @@ class CandyCrushGym(gym.Env):
         if 2 <= len(list_rows):
             for y0,x0 in list_rows:
                 if isVerticalStrippedCandy(self.state[y0, x0]):
-                    self.state[:, x0] = -1
+                    self.state[self.CANDY_BUFF_HEIGHT:, x0] = -1
                     self.columns_to_fill.add(x0)
                     return 1
                 
@@ -796,11 +767,11 @@ class CandyCrushGym(gym.Env):
     
     def react_t_l_shape(self, candy_id, x,y, list_rows, list_columns):
 
-        state = self.state
+        state = np.copy(self.state)
 
-        list_rows.sort(key=lambda tup: tup[1])
-        list_columns.sort(key=lambda tup: tup[0])
-
+        #list_rows.sort(key=lambda tup: tup[1])
+        #list_columns.sort(key=lambda tup: tup[0])
+        
         is_T_shape, list_to_remove = self.is_T_shape(candy_id, list_rows, list_columns)
 
         if is_T_shape:
@@ -834,8 +805,9 @@ class CandyCrushGym(gym.Env):
         return 0
     
     def reactFourCandys(self, candy_id, x, y, list_rows, list_columns):
-        state = self.state
+        state = np.copy(self.state)
 
+      
         if len(list_columns) == 4:
             for y0, x0 in list_columns:
                 if self.state[y0, x0] == -1:
@@ -849,7 +821,8 @@ class CandyCrushGym(gym.Env):
 
             self.state[y, x] = getVerticalStrippedCandyID(candy_id)
             return 0.5
-            
+        
+
         elif len(list_rows) == 4:
             for y0, x0 in list_rows:
                 if self.state[y0, x0] == -1:
@@ -868,7 +841,7 @@ class CandyCrushGym(gym.Env):
         return 0
     
     def reactThreeCandys(self, list_rows, list_columns):
-        state = self.state
+        state = np.copy(self.state)
 
         if len(list_columns) == 3:
             for y0, x0 in list_columns:

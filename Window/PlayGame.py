@@ -266,11 +266,11 @@ def main():
 
      
 
-        print(env.state)
-
+        print(np.array2string(env.state, separator=","))
+        print(best_action)
         reward = display_execute_action(best_action, env, window)
         print("--------")
-        print(env.state)
+        print(np.array2string(env.state, separator=","))
 
         state_img = stateToImageConverter(env.state)
         state_img = tf.expand_dims(state_img, axis=0) # add batch dim

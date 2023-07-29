@@ -1,3 +1,5 @@
+CANDY_BUFF_HEIGHT = 5
+
 def isNormalCandy(candyID):
     return 1 <= candyID <= 6
     
@@ -81,7 +83,7 @@ def isValidAction(action):
     direction = action % NUM_DIRECTIONS
 
     x = fieldID // FIELD_SIZE
-    y = fieldID % FIELD_SIZE
+    y = (fieldID % FIELD_SIZE) + CANDY_BUFF_HEIGHT
 
     # Swap candy
     x_swap = x # attention: numpy x->y are swapped
@@ -102,7 +104,7 @@ def isValidAction(action):
     return isValidIndex(x,y) and isValidIndex(x_swap, y_swap)
 
 def isValidIndex(x, y):
-    if FIELD_SIZE <= x or FIELD_SIZE <= y or x < 0 or y < 0:
+    if FIELD_SIZE <= x or FIELD_SIZE + CANDY_BUFF_HEIGHT <= y or x < 0 or y < CANDY_BUFF_HEIGHT:
         return False
         
     return True
