@@ -21,6 +21,7 @@ import numpy as np
 import sys
 
 from PlayGameConfig import *
+from Util import *
 
 class Display(tk.Frame):
 
@@ -180,6 +181,8 @@ class Display(tk.Frame):
         self.mcts_step_best_action_changed = []
         self.best_action_changed_labels = []
 
+
+    
     def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False):
 
         actions, probs = zip(*policy)
@@ -193,7 +196,7 @@ class Display(tk.Frame):
             return 
         
        
-        diff_policy = np.abs(probs - self.previous_policy)
+        
 
         best_action_previous_policy = np.argmax(self.previous_policy)
         best_action_previous_policy = actions[best_action_previous_policy]
@@ -206,14 +209,18 @@ class Display(tk.Frame):
             best_action = get_x_y_direction(best_action)
             self.best_action_changed_labels.append(f"({best_action})")
 
-            
 
+        
+        #diff_policy = np.abs(probs - self.previous_policy)
+        avg_diff = KL(probs, self.previous_policy)
         self.previous_policy = probs
 
 
+
+        #avg_diff = np.sum(diff_policy)
+
         
 
-        avg_diff = np.sum(diff_policy)
         self.policy_diffs.append(avg_diff)
         self.steps_mcts.append(num_mcts_step)
 
@@ -231,7 +238,7 @@ class Display(tk.Frame):
 
     
             plt_policy_statistics.set_xlim(left=0, right=NUM_MCTS_STEPS)
-            plt_policy_statistics.set_title("Policy changes $\Delta \pi(t) = \sum_a | \pi(a|s)_t - \pi(a|s)_{t-1} |$ \n State value changes $ \Delta v(t) = |v(s)_t - v(s)_{t-1}|$") 
+            plt_policy_statistics.set_title("Policy changes $\Delta \pi(t) = \mathrm{{KL}}(\pi_t || \pi_{{t-1}})$ \n State value changes $ \Delta v(t) = |v(s)_t - v(s)_{t-1}|$") 
             plt_policy_statistics.set_xlabel("MCTS step t")
             plt_policy_statistics.set_ylabel("$\Delta \pi(t)$", color="r")
             plt_policy_statistics.grid(True)
@@ -380,7 +387,7 @@ class Display(tk.Frame):
         max_prob = np.max(probs)
         
         self.fig_policy.clf()
-        self.fig_policy.suptitle(f"Policy $\pi$(a=(x, y, {{top, right, down, left}})|s) \nMCTS steps: {num_mcts_step}/{NUM_MCTS_STEPS}")
+        self.fig_policy.suptitle(f"Policy $\pi$(a=(x, y, {{top, right, down, left}})|s$)_{{t={num_mcts_step}}}$ \nMCTS step: {num_mcts_step}/{NUM_MCTS_STEPS}")
 
         #
         # Action: Top

@@ -1,5 +1,5 @@
 import argparse
-
+import numpy as np
 
 def checkFieldSize(size: str):
     size = int(size)
@@ -46,3 +46,15 @@ class dummy_context_mgr():
         return None
     def __exit__(self, exc_type, exc_value, traceback):
         return False
+
+def KL(P,Q):
+    """ Epsilon is used here to avoid conditional code for
+    checking that neither P nor Q is equal to 0. """
+    epsilon = 0.00001
+
+    # You may want to instead make copies to avoid changing the np arrays.
+    P = P+epsilon
+    Q = Q+epsilon
+
+    divergence = np.sum(P*np.log(P/Q))
+    return divergence
