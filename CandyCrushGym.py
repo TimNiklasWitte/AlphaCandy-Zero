@@ -875,7 +875,6 @@ class CandyCrushGym(gym.Env):
             for y0, x0 in list_rows:
                 
                 if self.state[y0, x0] == -1:
-                    print("break")
                     self.state = state
                     return 0 
 
