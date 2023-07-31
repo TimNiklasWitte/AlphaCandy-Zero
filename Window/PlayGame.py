@@ -259,7 +259,7 @@ def main():
 
 
         best_action, policy, value, done = mcts.step(return_policy=True)
-
+        
         window.update_policy_value_statistics_plot(policy, value, NUM_MCTS_STEPS, show=True)
         window.update_policy_plot(policy, NUM_MCTS_STEPS)
         

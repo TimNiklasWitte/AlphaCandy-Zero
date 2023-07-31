@@ -109,5 +109,26 @@ def isValidIndex(x, y):
         
     return True
 
+
+def get_x_y_direction(action):
+    fieldID = action // NUM_DIRECTIONS
+
+    direction = action % NUM_DIRECTIONS
+
+    if direction == 0:
+        direction = "top"
+    elif direction == 1:
+        direction = "right"
+    elif direction == 2:
+        direction = "down"
+    elif direction == 3:
+        direction = "left"
+
+    x = fieldID // FIELD_SIZE
+    y = (fieldID % FIELD_SIZE)
+
+    action = f"{x}, {y}, {direction}"
+    return action
+
 COLOR_BOMB_CANDY_ID = 25
 NUM_CANDIES = COLOR_BOMB_CANDY_ID

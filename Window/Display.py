@@ -15,6 +15,8 @@ from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
+from matplotlib.cm import get_cmap
+
 import numpy as np
 import sys
 
@@ -107,6 +109,10 @@ class Display(tk.Frame):
         self.policy_diffs = []
         self.previous_policy = None
 
+        self.best_action_changed_labels = []
+        self.mcts_step_best_action_changed = []
+
+
         self.previous_value = 0
         self.value_diffs = []
 
@@ -170,6 +176,10 @@ class Display(tk.Frame):
         self.previous_value = 0
         self.value_diffs = []
 
+
+        self.mcts_step_best_action_changed = []
+        self.best_action_changed_labels = []
+
     def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False):
 
         actions, probs = zip(*policy)
@@ -184,7 +194,24 @@ class Display(tk.Frame):
         
        
         diff_policy = np.abs(probs - self.previous_policy)
+
+        best_action_previous_policy = np.argmax(self.previous_policy)
+        best_action_previous_policy = actions[best_action_previous_policy]
+
+        best_action = np.argmax(probs)
+        best_action = actions[best_action] 
+        if best_action != best_action_previous_policy:
+            self.mcts_step_best_action_changed.append(num_mcts_step)
+
+            best_action = get_x_y_direction(best_action)
+            self.best_action_changed_labels.append(f"({best_action})")
+
+            
+
         self.previous_policy = probs
+
+
+        
 
         avg_diff = np.sum(diff_policy)
         self.policy_diffs.append(avg_diff)
@@ -213,6 +240,34 @@ class Display(tk.Frame):
 
             plt_value_statistics.plot(self.steps_mcts[:-1], self.value_diffs, color="b")
             plt_value_statistics.set_ylabel("$\Delta v(t)$", color="b")
+
+
+            #
+            # history of best actions
+            #
+     
+            cmap = get_cmap("Set2")  
+            len_actions = len(self.mcts_step_best_action_changed)
+            colors = cmap.colors 
+            len_colors = len(colors)
+
+            idx = 0
+            if len_actions - 5 >= 0:
+                for mcts_step, best_action in zip(self.mcts_step_best_action_changed[:len_actions - 5], self.best_action_changed_labels[:len_actions - 5]):
+                    plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors])
+
+                    idx += 1
+
+            tmp = max(0,len_actions - 5)
+            for mcts_step, best_action in zip(self.mcts_step_best_action_changed[tmp:], self.best_action_changed_labels[tmp:]):
+                
+                plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors], label=best_action)
+
+                idx += 1
+
+            plt_value_statistics.legend(title="a = ", loc="upper right")
+
+
 
             self.fig_policy_value_statistics.tight_layout()
             self.canvas_policy_value_statistics_plot.draw()
@@ -325,7 +380,7 @@ class Display(tk.Frame):
         max_prob = np.max(probs)
         
         self.fig_policy.clf()
-        self.fig_policy.suptitle(f"Policy $\pi$(a=({{top, right, down, left}}, x, y)|s) \nMCTS steps: {num_mcts_step}/{NUM_MCTS_STEPS}")
+        self.fig_policy.suptitle(f"Policy $\pi$(a=(x, y, {{top, right, down, left}})|s) \nMCTS steps: {num_mcts_step}/{NUM_MCTS_STEPS}")
 
         #
         # Action: Top
