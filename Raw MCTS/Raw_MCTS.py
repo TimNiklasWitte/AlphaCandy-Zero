@@ -66,7 +66,7 @@ class Raw_MCTS:
                     reduced_action_space.append(action)
 
         
-        self.reduced_action_space = np.array(reduced_action_space)
+        self.reduced_action_space = reduced_action_space
      
     def run(self, num_iterations: int ):
         
@@ -94,7 +94,9 @@ class Raw_MCTS:
                     # every possible action in root node leads to terminal state 
                     if current.parent == None:
                         best_action = 0
-                        return best_action, self.root.v / self.root.n
+                        self.env.state = state_env
+                        #return best_action, self.root.v / self.root.n
+                        return self.get_best_action(), self.get_policy(), self.get_value()
                         
                     current = current.parent
                     continue
@@ -145,7 +147,9 @@ class Raw_MCTS:
                     current.done = True
 
                     if current == self.root:
-                        return 1, 0
+                        self.env.state = state_env
+                        #return 1, 0
+                        return self.get_best_action(), self.get_policy(), self.get_value()
 
        
         self.env.state = state_env
@@ -154,7 +158,7 @@ class Raw_MCTS:
         # Determine best action
         #
      
-        return self.get_best_action(), self.root.v / self.root.n
+        return self.get_best_action(), self.get_policy(), self.get_value()
         
     
     def rollout(self, node):
@@ -222,7 +226,7 @@ class Raw_MCTS:
 
         # no action can be selected 
         if len(q_values) == 0:
-            return 0
+            return self.reduced_action_space[0]
 
         max_idx = np.argmax(q_values)
      
@@ -231,6 +235,26 @@ class Raw_MCTS:
         return best_action
         
 
+    def get_policy(self):
+
+
+        self.root.childrens.sort(key=lambda node: node.action)
+
+        n_values = np.array([node.n for node in self.root.childrens])
+        n_total = np.sum(n_values)
+
+        if n_total == 0:
+            len_reduced_action_space = len(self.reduced_action_space)
+            return np.full(shape=(len_reduced_action_space,), fill_value=1/len_reduced_action_space, dtype=np.float32)
+        
+        policy = n_values / n_total
+
+        return policy
+
+    def get_value(self):
+        v = self.root.v / self.root.n
+
+        return v
 
     
 

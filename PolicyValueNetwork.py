@@ -1,25 +1,33 @@
 import tensorflow as tf
+import numpy as np
 
 from Config import *
 from CandyCrushUtiles import *
 
 class PolicyValueNetwork(tf.keras.Model):
 
-    def __init__(self):
+    def __init__(self, num_actions):
      
         super(PolicyValueNetwork, self).__init__()
 
-        self.layer_list = [
+    
+        self.frontend_layer_list = [
             tf.keras.layers.Conv2D(filters=40, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
             tf.keras.layers.Conv2D(filters=30, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
             tf.keras.layers.Conv2D(filters=15, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
             tf.keras.layers.Conv2D(filters=8, kernel_size=(4,4), strides=(4,4), activation="tanh", padding='same'),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(10, activation="tanh")
         ]
 
-        self.policy_layer = tf.keras.layers.Dense(NUM_ACTIONS, activation="softmax")
-        self.value_layer = tf.keras.layers.Dense(1)
+        self.backend_policy_layer_list = [
+            tf.keras.layers.Dense(10, activation="tanh"),
+            tf.keras.layers.Dense(num_actions, activation="softmax")
+        ]
+
+        self.backend_value_layer_list = [
+            tf.keras.layers.Dense(10, activation="tanh"),
+            tf.keras.layers.Dense(1)
+        ]
 
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
@@ -45,28 +53,48 @@ class PolicyValueNetwork(tf.keras.Model):
     @tf.function
     def call(self, x):
         
-        for layer in self.layer_list:
+        for layer in self.frontend_layer_list:
             x = layer(x)
         
-        policy = self.policy_layer(x)
-        value = self.value_layer(x)
         
-        # batch_size = x.shape[0]
-        # policy = tf.where(self.valid_actions, policy_logits, tf.zeros(shape=(batch_size, NUM_ACTIONS, )))
-        
-        # #policy = tf.nn.softmax(policy_logits, axis=-1)
+        state_embedding = x
 
+
+        x = self.backend_policy_layer_list[0](state_embedding)
+        for layer in self.backend_policy_layer_list[1:]:
+            x = layer(x)
+
+        policy = x 
+
+        x = self.backend_value_layer_list[0](state_embedding)
+        for layer in self.backend_value_layer_list[1:]:
+            x = layer(x)
+        
+        value = x
 
         return policy, value 
     
 
     def call_no_tf_func(self, x):
         
-        for layer in self.layer_list:
+        for layer in self.frontend_layer_list:
             x = layer(x)
         
-        policy = self.policy_layer(x)
-        value = self.value_layer(x)
+        
+        state_embedding = x
+
+
+        x = self.backend_policy_layer_list[0](state_embedding)
+        for layer in self.backend_policy_layer_list[1:]:
+            x = layer(x)
+
+        policy = x 
+
+        x = self.backend_value_layer_list[0](state_embedding)
+        for layer in self.backend_value_layer_list[1:]:
+            x = layer(x)
+        
+        value = x
 
         return policy, value 
 

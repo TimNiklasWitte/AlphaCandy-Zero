@@ -14,18 +14,19 @@ from CandyAugmentation import *
 
 class MCTS_Buffer:
 
-    def __init__(self, num_samples, state_shape):
+    def __init__(self, num_samples, num_actions, state_shape):
         
         self.num_samples = num_samples
+        self.num_actions = num_actions
 
         self.states = np.zeros(shape=(num_samples, *state_shape), dtype=STATE_DTYPE)
         self.states_shm = shared_memory.SharedMemory(create=True, size=self.states.nbytes)
 
-        self.values = np.zeros(shape=(num_samples,), dtype=np.float32)
+        self.values = np.zeros(shape=(num_samples,), dtype=VALUE_DTYPE)
         self.values_shm = shared_memory.SharedMemory(create=True, size=self.values.nbytes)
 
-        self.actions = np.zeros(shape=(num_samples,), dtype=np.uint8)
-        self.actions_shm = shared_memory.SharedMemory(create=True, size=self.actions.nbytes)
+        self.policies = np.zeros(shape=(num_samples, num_actions), dtype=POLICY_DTYPE)
+        self.policies_shm = shared_memory.SharedMemory(create=True, size=self.policies.nbytes)
 
         self.candyAugmentation = CandyAugmentation()
 
@@ -43,10 +44,10 @@ class MCTS_Buffer:
                         buffer=self.values_shm.buf
                     )
         
-        self.actions = np.ndarray(
+        self.policies = np.ndarray(
                         shape=(MCTS_BUFFER_SIZE,), 
-                        dtype=ACTION_DTYPE, 
-                        buffer=self.actions_shm.buf
+                        dtype=POLICY_DTYPE, 
+                        buffer=self.policies_shm.buf
                     )
 
         
@@ -57,30 +58,30 @@ class MCTS_Buffer:
         self.states = np.concatenate([states, self.states], axis=0)
         
         self.values = np.tile(self.values, num_permutations + 1)
-        self.actions = np.tile(self.actions, num_permutations + 1)
+        self.policies = np.tile(self.policies, num_permutations + 1)
         
         
         self.num_samples = (num_permutations + 1) * MCTS_BUFFER_SIZE
-        print(self.states.shape, self.states.nbytes)
-        print(self.values.shape)
-        print(self.actions.shape)
+        # print(self.states.shape, self.states.nbytes)
+        # print(self.values.shape)
+        # print(self.actions.shape)
 
     def dataset_generator(self):
         
         stateToImageConverter = StateToImageConverter(FIELD_SIZE, candy_buff_height=CANDY_BUFF_HEIGHT, image_size=CANDY_IMG_SIZE)
 
         for i in range(self.num_samples):
-            yield stateToImageConverter(self.states[i]), self.values[i], self.actions[i]
+            yield stateToImageConverter(self.states[i]), self.values[i], self.policies[i]
     
 
     def free_shms(self):
         self.states_shm.close()
         self.values_shm.close()
-        self.actions_shm.close()
+        self.policies_shm.close()
 
         self.states_shm.unlink()
         self.values_shm.unlink()
-        self.actions_shm.unlink()
+        self.policies_shm.unlink()
 
 
 def prepare_data(dataset):
@@ -89,7 +90,7 @@ def prepare_data(dataset):
 
     #dataset = tf.py_func(stateToImageConverter)
 
-    dataset = dataset.map(lambda state, target_value, target_action: (state, target_value, tf.one_hot(target_action, depth=NUM_ACTIONS)))
+    #dataset = dataset.map(lambda state, target_value, target_action: (state, target_value, tf.one_hot(target_action, depth=NUM_ACTIONS)))
     
     # Convert data from uint8 to float32
     #dataset = dataset.map(lambda state, target_value, target_action: (tf.cast(state, tf.float32), target_value, target_action))
@@ -105,11 +106,14 @@ def prepare_data(dataset):
 
     return dataset
 
-def process_update_dataset(process_id, seed, states_shm, values_shm, actions_shm, request_state_img_shm, response_action_shm, wait_for_response_sema):
+def process_update_dataset(process_id, seed, states_shm, values_shm, policies_shm, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema):
+    
+    reduced_action_space = get_reduced_action_space()
+    num_actions = len(reduced_action_space)
     
     states = np.ndarray(shape=(MCTS_BUFFER_SIZE, *STATE_SHAPE), dtype=STATE_DTYPE, buffer=states_shm.buf)
-    values = np.ndarray(shape=(MCTS_BUFFER_SIZE,), dtype=np.float32, buffer=values_shm.buf)
-    actions = np.ndarray(shape=(MCTS_BUFFER_SIZE,), dtype=np.uint8, buffer=actions_shm.buf)
+    values = np.ndarray(shape=(MCTS_BUFFER_SIZE,), dtype=VALUE_DTYPE, buffer=values_shm.buf)
+    policies = np.ndarray(shape=(MCTS_BUFFER_SIZE, num_actions), dtype=POLICY_DTYPE, buffer=policies_shm.buf)
 
     iterator = range(iterations_per_process)
     if process_id == NUM_PROCS - 1:
@@ -122,9 +126,9 @@ def process_update_dataset(process_id, seed, states_shm, values_shm, actions_shm
     stateToImageConverter = StateToImageConverter(field_size=FIELD_SIZE, candy_buff_height=CANDY_BUFF_HEIGHT, image_size=CANDY_IMG_SIZE)
     for i in iterator:
         
-        mcts = MCTS(env, request_state_img_shm, response_action_shm, wait_for_response_sema, stateToImageConverter)
+        mcts = MCTS(env, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema, stateToImageConverter)
 
-        action, value = mcts.run(NUM_MCTS_STEPS)
+        _, policy, value = mcts.run(NUM_MCTS_STEPS)
 
         # action = env.action_space.sample()
         # value = 1
@@ -133,7 +137,11 @@ def process_update_dataset(process_id, seed, states_shm, values_shm, actions_shm
         idx = NUM_PROCS * i + process_id
         states[idx, :, :] = state 
         values[idx] = value
-        actions[idx] = action
+        policies[idx, :] = policy[:]
+
+    
+        idx_reduced_action_space = np.argmax(policy)
+        action = reduced_action_space[idx_reduced_action_space]
 
         state, reward, done, _  = env.step(action)
  
@@ -145,29 +153,38 @@ def update_dataset(mcts_buffer, policyValueNetwork):
 
     request_state_img_shm_list = []
     response_policy_shm_list = []
+    response_value_shm_list = []
     wait_for_response_sema_list = []
     
+    reduced_action_space = get_reduced_action_space()
+    num_actions = len(reduced_action_space)
+
     # prototypical state and action memory
     state_img = np.zeros(shape=STATE_IMG_SHAPE, dtype=STATE_IMG_DTYPE)
-    policy = np.zeros(shape=(NUM_ACTIONS,), dtype=POLICY_DTYPE)
+    policy = np.zeros(shape=(num_actions,), dtype=POLICY_DTYPE)
+    value = np.zeros(shape=(1,), dtype=VALUE_DTYPE)
+
 
     proc_list = [] 
     for process_id in range(NUM_PROCS):
         
         request_state_img_shm = shared_memory.SharedMemory(create=True, size=state_img.nbytes)
         response_policy_shm = shared_memory.SharedMemory(create=True, size=policy.nbytes)
+        response_value_shm = shared_memory.SharedMemory(create=True, size=value.nbytes)
+
         wait_for_response_sema = Semaphore(0)
 
         seed = np.random.randint(low=0, high=9999999)
 
         proc = Process(
             target=process_update_dataset, 
-            args=(process_id, seed, mcts_buffer.states_shm, mcts_buffer.values_shm, mcts_buffer.actions_shm, request_state_img_shm, response_policy_shm, wait_for_response_sema,)
+            args=(process_id, seed, mcts_buffer.states_shm, mcts_buffer.values_shm, mcts_buffer.policies_shm, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema,)
         )
 
         proc_list.append(proc)
         request_state_img_shm_list.append(request_state_img_shm)
         response_policy_shm_list.append(response_policy_shm)
+        response_value_shm_list.append(response_value_shm)
         wait_for_response_sema_list.append(wait_for_response_sema)
         proc.start()
 
@@ -202,7 +219,7 @@ def update_dataset(mcts_buffer, policyValueNetwork):
 
         if can_process_at_least_one:
             data = np.stack(data, axis=0)
-            policy, _ = policyValueNetwork.call_no_tf_func(data)
+            policy, value = policyValueNetwork.call_no_tf_func(data)
             #policy = policy.numpy()
          
             #policy[:, invalid_actions] = 0
@@ -210,9 +227,12 @@ def update_dataset(mcts_buffer, policyValueNetwork):
 
             for data_idx, proc_idx in enumerate(request_proc_list):
                 response_policy_shm = response_policy_shm_list[proc_idx]
-                response_policy = np.ndarray(shape=(NUM_ACTIONS,), dtype=POLICY_DTYPE, buffer=response_policy_shm.buf)
+                response_policy = np.ndarray(shape=(num_actions,), dtype=POLICY_DTYPE, buffer=response_policy_shm.buf)
+                response_policy[:] = policy[data_idx, :]
 
-                response_policy[:] = policy[data_idx]
+                response_value_shm = response_value_shm_list[proc_idx]
+                response_value = np.ndarray(shape=(1,), dtype=VALUE_DTYPE, buffer=response_value_shm.buf)
+                response_value[:] = value[data_idx]
 
                 wait_for_response_sema = wait_for_response_sema_list[proc_idx]
                 wait_for_response_sema.release()
@@ -225,5 +245,8 @@ def update_dataset(mcts_buffer, policyValueNetwork):
         response_policy_shm.close()
         response_policy_shm.unlink()
 
+    for response_value_shm in response_value_shm_list:
+        response_value_shm.close()
+        response_value_shm.unlink()
 
     mcts_buffer.update_memory()

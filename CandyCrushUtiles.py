@@ -1,3 +1,6 @@
+import numpy as np
+
+
 CANDY_BUFF_HEIGHT = 5
 
 def isNormalCandy(candyID):
@@ -132,3 +135,26 @@ def get_x_y_direction(action):
 
 COLOR_BOMB_CANDY_ID = 25
 NUM_CANDIES = COLOR_BOMB_CANDY_ID
+
+
+def get_reduced_action_space():
+
+    # can represent every possible action only with top and right actions
+    # also possible top-left, down-right, down-left
+    reduced_action_space = []
+    for action in range(FIELD_SIZE * FIELD_SIZE * 4):
+        if isValidAction(action):
+
+            x_y_direction = get_x_y_direction(action)
+
+            if "top" in x_y_direction:
+                reduced_action_space.append(action)
+                    
+            elif "right" in x_y_direction:
+                reduced_action_space.append(action)
+
+
+    reduced_action_space = np.array(reduced_action_space)
+
+    return reduced_action_space
+

@@ -40,7 +40,7 @@ def process_runMCTS(process_id, num_mcts_iterations, avg_rewards_shm, sum_reward
         mcts = Raw_MCTS(env)
 
         time_start = time.time()
-        action, _ = mcts.run(num_mcts_iterations)
+        action, _, _ = mcts.run(num_mcts_iterations)
         time_stop = time.time()
 
         _, reward, _, _  = env.step(action)

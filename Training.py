@@ -21,7 +21,9 @@ def main():
     #
     # MCTS_Buffer: Its data is used by a TensorFlow Dataset object
     #
-    mcts_buffer = MCTS_Buffer(MCTS_BUFFER_SIZE, STATE_SHAPE)
+    reduced_action_space = get_reduced_action_space()
+    len_reduced_action_space = len(reduced_action_space)
+    mcts_buffer = MCTS_Buffer(MCTS_BUFFER_SIZE, len_reduced_action_space, STATE_SHAPE)
 
     #
     # Logging
@@ -33,20 +35,21 @@ def main():
     # Initialize model
     #
 
-    policyValueNetwork = PolicyValueNetwork()
+    policyValueNetwork = PolicyValueNetwork(num_actions=len_reduced_action_space)
     policyValueNetwork.build(input_shape=(1,*STATE_IMG_SHAPE))
 
     policyValueNetwork.summary()
+    
  
     update_dataset(mcts_buffer, policyValueNetwork)
 
-
+    return 
     dataset = tf.data.Dataset.from_generator(
                     mcts_buffer.dataset_generator,
                     output_signature=(
                             tf.TensorSpec(shape=STATE_IMG_SHAPE , dtype=STATE_IMG_DTYPE),
-                            tf.TensorSpec(shape=(), dtype=VALUE_DTYPE),
-                            tf.TensorSpec(shape=(), dtype=ACTION_DTYPE)
+                            tf.TensorSpec(shape=(1,), dtype=VALUE_DTYPE),
+                            tf.TensorSpec(shape=(len_reduced_action_space), dtype=POLICY_DTYPE)
                         )
                 )
     
