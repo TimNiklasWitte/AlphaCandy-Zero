@@ -56,7 +56,7 @@ def process_runMCTS(process_id, num_mcts_iterations, avg_rewards_shm, sum_reward
 def main():
     
  
-    num_mcts_iterations_list = range(50, 500, 50)
+    num_mcts_iterations_list = range(10, 50, 10)
     
 
     for num_mcts_iterations in tqdm.tqdm(num_mcts_iterations_list, position=0, leave=True):
