@@ -740,7 +740,7 @@ class CandyCrushGym(gym.Env):
             if id == swapped_candyID:
                 self.state[max(y-1, self.CANDY_BUFF_HEIGHT):min(y+2, self.FIELD_SIZE + self.CANDY_BUFF_HEIGHT -1), max(x-1, 0):min(x+2, self.FIELD_SIZE -1)] = -1
                 
-                for i in range(max(x-1, self.CANDY_BUFF_HEIGHT),min(x+2, self.FIELD_SIZE)):
+                for i in range(max(x-1, 0),min(x+2, self.FIELD_SIZE -1)):
                     self.columns_to_fill.add(i)
 
                 return 1
