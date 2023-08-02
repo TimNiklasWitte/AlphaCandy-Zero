@@ -9,8 +9,8 @@ BATCH_SIZE = 64
 # Create dataset
 #
 
-MCTS_BUFFER_SIZE = 20
-NUM_PROCS = 5
+MCTS_BUFFER_SIZE = 700
+NUM_PROCS = 100
 iterations_per_process = int(MCTS_BUFFER_SIZE / NUM_PROCS) # // better?
 
 NUM_MCTS_STEPS = 150
