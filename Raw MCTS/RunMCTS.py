@@ -7,7 +7,7 @@ import time
 import sys
 sys.path.append("../")
 
-from MCTS import *
+from Raw_MCTS import *
 from CandyCrushGym import *
 
 
@@ -37,10 +37,10 @@ def process_runMCTS(process_id, num_mcts_iterations, avg_rewards_shm, sum_reward
     rewards = np.zeros(shape=(NUM_ITERATIONS,), dtype=np.float32)
     times = np.zeros(shape=(NUM_ITERATIONS,), dtype=np.float32)
     for i in iterator:
-        mcts = MCTS(env)
+        mcts = Raw_MCTS(env)
 
         time_start = time.time()
-        action = mcts.run(num_mcts_iterations)
+        action, _ = mcts.run(num_mcts_iterations)
         time_stop = time.time()
 
         _, reward, _, _  = env.step(action)
@@ -56,7 +56,7 @@ def process_runMCTS(process_id, num_mcts_iterations, avg_rewards_shm, sum_reward
 def main():
     
  
-    num_mcts_iterations_list = range(10, 50, 10)
+    num_mcts_iterations_list = range(200, 250, 10)
     
 
     for num_mcts_iterations in tqdm.tqdm(num_mcts_iterations_list, position=0, leave=True):

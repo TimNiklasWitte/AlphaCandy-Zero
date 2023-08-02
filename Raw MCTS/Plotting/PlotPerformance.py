@@ -4,13 +4,13 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-root_performance_logs = "./logs/performance"
+root_performance_logs = "../logs/performance"
 
 def main():
 
     sns.set_theme(style="ticks", palette="pastel")
     
-    num_mcts_iterations = range(50, 500, 50)
+    num_mcts_iterations = range(10, 250, 20)
 
     dfs = []
     for i in num_mcts_iterations:
