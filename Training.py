@@ -85,9 +85,10 @@ def main():
     #     print(state)
     #     print(target_value)
     #     print(target_policy)
+
     #     break
 
-    return
+    # return
 
     print("<INFO> Epoch: 0")
     log(train_summary_writer, policyValueNetwork, train_dataset, test_dataset, 0)
@@ -111,8 +112,8 @@ def main():
                     mcts_buffer.dataset_generator,
                     output_signature=(
                             tf.TensorSpec(shape=STATE_IMG_SHAPE , dtype=STATE_IMG_DTYPE),
-                            tf.TensorSpec(shape=(), dtype=VALUE_DTYPE),
-                            tf.TensorSpec(shape=(), dtype=ACTION_DTYPE)
+                            tf.TensorSpec(shape=(1,), dtype=VALUE_DTYPE),
+                            tf.TensorSpec(shape=(len_reduced_action_space,), dtype=POLICY_DTYPE)
                         )
                 )
             

@@ -11,11 +11,14 @@ from multiprocessing import Process, shared_memory, Semaphore
 
 
 
-def process_evaluate(process_id, seed, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, wait_for_response_sema, use_policy_network_only):
+def process_evaluate(process_id, seed, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema, use_policy_network_only):
     
 
     env = CandyCrushGym(seed)
     state = env.reset()
+
+    reduced_action_space = get_reduced_action_space()
+    num_actions = len(reduced_action_space)
 
     avg_rewards_mem = np.ndarray(shape=(EVAL_NUM_PROCS,), dtype=np.float32, buffer=avg_rewards_shm.buf)
     sum_rewards_mem = np.ndarray(shape=(EVAL_NUM_PROCS,), dtype=np.float32, buffer=sum_rewards_shm.buf)
@@ -40,36 +43,36 @@ def process_evaluate(process_id, seed, avg_rewards_shm, sum_rewards_shm, request
 
             wait_for_response_sema.acquire()
 
-            response_policy = np.ndarray(shape=(NUM_ACTIONS,), dtype=POLICY_DTYPE, buffer=response_policy_shm.buf)
+            response_policy = np.ndarray(shape=(num_actions,), dtype=POLICY_DTYPE, buffer=response_policy_shm.buf)
                 
             num_iterations = 0
             terminate_rollout = False
 
             # convert + normalize -> prevent error by np.random.choice 
-            response_policy = response_policy.astype('float64')
-            response_policy /= response_policy.sum()  
+            # response_policy = response_policy.astype('float64')
+            # response_policy /= response_policy.sum()  
 
             while True:
                 
-                action = np.random.choice(np.arange(NUM_ACTIONS), p=response_policy)
-            
-                if isValidAction(action):
-                    state, reward, _, _ = env.step(action)
-                    if reward != 0:
-                        break 
+                action_idx = np.random.choice(np.arange(num_actions), p=response_policy)
+                action = reduced_action_space[action_idx]
 
-                    if num_iterations > 1000:
-                        terminate_rollout = True 
-                        break 
-                    
-                    num_iterations += 1
-
-                if terminate_rollout:
+                state, reward, _, _ = env.step(action)
+                if reward != 0:
                     break 
 
+                if num_iterations > 100:
+                    terminate_rollout = True 
+                    break 
+                    
+                num_iterations += 1
+
+            if terminate_rollout:
+                 break 
+
         else:
-            mcts = MCTS(env, request_state_img_shm, response_policy_shm, wait_for_response_sema, stateToImageConverter)
-            action, _ = mcts.run(NUM_MCTS_STEPS)
+            mcts = MCTS(env, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema, stateToImageConverter)
+            action, _, _ = mcts.run(NUM_MCTS_STEPS)
 
          
             state, reward, done, _  = env.step(action)
@@ -87,14 +90,20 @@ def process_evaluate(process_id, seed, avg_rewards_shm, sum_rewards_shm, request
 
 def evaluate(policyValueNetwork, use_policy_network_only):
 
-
     request_state_img_shm_list = []
     response_policy_shm_list = []
+    response_value_shm_list = []
     wait_for_response_sema_list = []
     
+    reduced_action_space = get_reduced_action_space()
+    num_actions = len(reduced_action_space)
+
+
     # prototypical state and action memory
     state_img = np.zeros(shape=STATE_IMG_SHAPE, dtype=STATE_IMG_DTYPE)
-    policy = np.zeros(shape=(NUM_ACTIONS,), dtype=POLICY_DTYPE)
+    policy = np.zeros(shape=(num_actions,), dtype=POLICY_DTYPE)
+    value = np.zeros(shape=(1,), dtype=VALUE_DTYPE)
+
 
     avg_rewards_mem = np.zeros(shape=(EVAL_NUM_PROCS, ), dtype=np.float32)
     avg_rewards_shm = shared_memory.SharedMemory(create=True, size=avg_rewards_mem.nbytes)
@@ -108,18 +117,20 @@ def evaluate(policyValueNetwork, use_policy_network_only):
 
         request_state_img_shm = shared_memory.SharedMemory(create=True, size=state_img.nbytes)
         response_policy_shm = shared_memory.SharedMemory(create=True, size=policy.nbytes)
+        response_value_shm = shared_memory.SharedMemory(create=True, size=value.nbytes)
         wait_for_response_sema = Semaphore(0)
 
         seed = np.random.randint(low=0, high=9999999)
 
         proc = Process(
             target=process_evaluate, 
-            args=(process_id, seed, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, wait_for_response_sema, use_policy_network_only)
+            args=(process_id, seed, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema, use_policy_network_only)
         )
 
         proc_list.append(proc)
         request_state_img_shm_list.append(request_state_img_shm)
         response_policy_shm_list.append(response_policy_shm)
+        response_value_shm_list.append(response_value_shm)
         wait_for_response_sema_list.append(wait_for_response_sema)
         proc.start()
 
@@ -147,12 +158,16 @@ def evaluate(policyValueNetwork, use_policy_network_only):
 
         if can_process_at_least_one:
             data = np.stack(data, axis=0)
-            policy, _ = policyValueNetwork.call_no_tf_func(data)
+            policy, value = policyValueNetwork.call_no_tf_func(data)
       
             for data_idx, proc_idx in enumerate(request_proc_list):
                 response_policy_shm = response_policy_shm_list[proc_idx]
-                response_policy = np.ndarray(shape=(NUM_ACTIONS,), dtype=POLICY_DTYPE, buffer=response_policy_shm.buf)
-                response_policy[:] = policy[data_idx]
+                response_policy = np.ndarray(shape=(num_actions,), dtype=POLICY_DTYPE, buffer=response_policy_shm.buf)
+                response_policy[:] = policy[data_idx, :]
+
+                response_value_shm = response_value_shm_list[proc_idx]
+                response_value = np.ndarray(shape=(1,), dtype=VALUE_DTYPE, buffer=response_value_shm.buf)
+                response_value[:] = value[data_idx]
 
                 wait_for_response_sema = wait_for_response_sema_list[proc_idx]
                 wait_for_response_sema.release()
@@ -166,6 +181,10 @@ def evaluate(policyValueNetwork, use_policy_network_only):
     for response_policy_shm in response_policy_shm_list:
         response_policy_shm.close()
         response_policy_shm.unlink()
+
+    for response_value_shm in response_value_shm_list:
+        response_value_shm.close()
+        response_value_shm.unlink()
 
     # num_steps_mem = np.ndarray(shape=num_steps_mem.shape, dtype=num_steps_mem.dtype, buffer=num_steps_shm.buf)
     # num_steps_copy = np.copy(num_steps_mem)

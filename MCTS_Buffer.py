@@ -139,9 +139,9 @@ def process_update_dataset(process_id, seed, states_shm, values_shm, policies_sh
         idx = NUM_PROCS * i + process_id
         states[idx, :, :] = state 
         values[idx] = value
+
         policies[idx, :] = policy[:]
 
-    
         # idx_reduced_action_space = np.argmax(policy)
         # action = reduced_action_space[idx_reduced_action_space]
 

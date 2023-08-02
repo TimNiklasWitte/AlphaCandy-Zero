@@ -8,7 +8,7 @@ from Utils import *
 c_puct = 2
 
 class Node:
-    def __init__(self, parent, state, action, p):
+    def __init__(self, parent, state, action, action_idx, p):
 
         self.n = 0
         self.w = 0
@@ -21,6 +21,7 @@ class Node:
         self.state = state
 
         self.action = action
+        self.action_idx = action_idx
 
         self.done = False
 
@@ -43,12 +44,7 @@ class MCTS:
         self.N = 0
 
         self.env = env
-        self.root = Node(parent=None, state=env.state, action=-1, p=1)
-
-        self.NUM_ROLLOUT_STEPS = 4
-        self.gamma = 0.99
-        self.discount_factors = np.array([self.gamma**i for i in range(self.NUM_ROLLOUT_STEPS)])
-
+        self.root = Node(parent=None, state=env.state, action=-1, action_idx=-1, p=1)
 
         self.reduced_action_space = get_reduced_action_space()
         self.num_actions = len(self.reduced_action_space)
@@ -123,7 +119,7 @@ class MCTS:
                 if reward != 0:
                     can_not_expand = False 
                     next_state = np.copy(next_state)
-                    node = Node(parent=current, state=next_state, action=action, p=response_policy[action_idx])
+                    node = Node(parent=current, state=next_state, action=action, action_idx=action_idx, p=response_policy[action_idx])
 
                     current.childrens.append(node)
 
@@ -138,7 +134,11 @@ class MCTS:
                     #return 1, 0
                     
                     return self.get_best_action(), self.get_policy(), self.get_value()
-           
+        
+            #
+            # Backup
+            #
+            self.backup(current, response_value)
 
         self.env.state = state_env
         
@@ -182,16 +182,17 @@ class MCTS:
         if n_total == 0:
             return np.full(shape=(self.num_actions,), fill_value=1/self.num_actions, dtype=POLICY_DTYPE)
         
-        policy = n_values / n_total
+
+        policy = np.zeros(shape=(self.num_actions,) , dtype=POLICY_DTYPE)
+        action_idxs = [node.action_idx for node in self.root.childrens]
+        probs = n_values / n_total
+        policy[action_idxs] = probs
 
         return policy
 
 
     def get_value(self):
         
-        if self.root.n == 0:
-            print(self.root.w)
-
         q_root = self.root.w / self.root.n
      
         return q_root
