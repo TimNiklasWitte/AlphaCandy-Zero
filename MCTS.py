@@ -67,6 +67,7 @@ class MCTS:
 
         for i in range(num_iterations):
 
+         
             current = self.root
 
             #
@@ -81,6 +82,7 @@ class MCTS:
 
                     # every possible action in root node leads to terminal state 
                     if current.parent == None:
+                        self.env.state = state_env
                         return self.get_best_action(), self.get_policy(), self.get_value()
                         
                     current = current.parent
@@ -96,17 +98,17 @@ class MCTS:
 
             # Evaluate
             state = current.state
-
-            request_state_img = np.ndarray(shape=STATE_SHAPE, dtype=STATE_DTYPE, buffer=self.request_state_img_shm.buf)
-            request_state_img[:] = state[:]
+            state_img = self.stateToImageConverter(state)
+            request_state_img = np.ndarray(shape=STATE_IMG_SHAPE, dtype=STATE_IMG_DTYPE, buffer=self.request_state_img_shm.buf)
+            request_state_img[:] = state_img[:]
             
             self.wait_for_response_sema.acquire()
 
             response_policy = np.ndarray(shape=(self.num_actions,), dtype=POLICY_DTYPE, buffer=self.response_policy_shm.buf)
-     
+           
             response_value = np.ndarray(shape=(1,), dtype=VALUE_DTYPE, buffer=self.response_value_shm.buf)
             response_value = response_value[0]
-
+            
 
             # Expand
             state_current = np.copy(current.state)
@@ -130,14 +132,16 @@ class MCTS:
             if can_not_expand:
 
                 current.done = True
+                
                 if current == self.root:
                     self.env.state = state_env
                     #return 1, 0
+                    
                     return self.get_best_action(), self.get_policy(), self.get_value()
            
 
         self.env.state = state_env
-
+        
         return self.get_best_action(), self.get_policy(), self.get_value()
         
     def backup(self, node, v):
@@ -156,17 +160,15 @@ class MCTS:
 
     def get_best_action(self):
 
-        #
-        # Determine best action
-        #
-
-        q_values = [node.v / node.n for node in self.root.childrens if node.n != 0]
+        n_values = np.array([node.n for node in self.root.childrens])
+        n_total = np.sum(n_values)
 
         # no action can be selected 
-        if len(q_values) == 0:
+        if n_total == 0:
             return self.reduced_action_space[0]
 
-        max_idx = np.argmax(q_values)
+        policy = n_values / n_total
+        max_idx = np.argmax(policy)
      
         best_action = self.root.childrens[max_idx].action
 
@@ -186,10 +188,10 @@ class MCTS:
 
 
     def get_value(self):
-
-        if self.root.n == 0:
-            return 0
         
+        if self.root.n == 0:
+            print(self.root.w)
+
         q_root = self.root.w / self.root.n
      
         return q_root

@@ -22,7 +22,7 @@ class MCTS_Buffer:
         self.states = np.zeros(shape=(num_samples, *state_shape), dtype=STATE_DTYPE)
         self.states_shm = shared_memory.SharedMemory(create=True, size=self.states.nbytes)
 
-        self.values = np.zeros(shape=(num_samples,), dtype=VALUE_DTYPE)
+        self.values = np.zeros(shape=(num_samples, 1), dtype=VALUE_DTYPE)
         self.values_shm = shared_memory.SharedMemory(create=True, size=self.values.nbytes)
 
         self.policies = np.zeros(shape=(num_samples, num_actions), dtype=POLICY_DTYPE)
@@ -39,13 +39,13 @@ class MCTS_Buffer:
                     )
     
         self.values = np.ndarray(
-                        shape=(MCTS_BUFFER_SIZE,), 
+                        shape=(MCTS_BUFFER_SIZE, 1), 
                         dtype=VALUE_DTYPE, 
                         buffer=self.values_shm.buf
                     )
         
         self.policies = np.ndarray(
-                        shape=(MCTS_BUFFER_SIZE,), 
+                        shape=(MCTS_BUFFER_SIZE, self.num_actions), 
                         dtype=POLICY_DTYPE, 
                         buffer=self.policies_shm.buf
                     )
@@ -54,11 +54,13 @@ class MCTS_Buffer:
         states = self.candyAugmentation(self.states)
         num_permutations = states.shape[0]
 
+        
+
         states = np.reshape(states, newshape=(num_permutations * MCTS_BUFFER_SIZE, FIELD_SIZE  + CANDY_BUFF_HEIGHT, FIELD_SIZE))
         self.states = np.concatenate([states, self.states], axis=0)
         
-        self.values = np.tile(self.values, num_permutations + 1)
-        self.policies = np.tile(self.policies, num_permutations + 1)
+        self.values = np.tile(self.values, (num_permutations + 1, 1))
+        self.policies = np.tile(self.policies, (num_permutations + 1, 1))
         
         
         self.num_samples = (num_permutations + 1) * MCTS_BUFFER_SIZE
@@ -112,7 +114,7 @@ def process_update_dataset(process_id, seed, states_shm, values_shm, policies_sh
     num_actions = len(reduced_action_space)
     
     states = np.ndarray(shape=(MCTS_BUFFER_SIZE, *STATE_SHAPE), dtype=STATE_DTYPE, buffer=states_shm.buf)
-    values = np.ndarray(shape=(MCTS_BUFFER_SIZE,), dtype=VALUE_DTYPE, buffer=values_shm.buf)
+    values = np.ndarray(shape=(MCTS_BUFFER_SIZE, 1), dtype=VALUE_DTYPE, buffer=values_shm.buf)
     policies = np.ndarray(shape=(MCTS_BUFFER_SIZE, num_actions), dtype=POLICY_DTYPE, buffer=policies_shm.buf)
 
     iterator = range(iterations_per_process)
@@ -128,7 +130,7 @@ def process_update_dataset(process_id, seed, states_shm, values_shm, policies_sh
         
         mcts = MCTS(env, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema, stateToImageConverter)
 
-        _, policy, value = mcts.run(NUM_MCTS_STEPS)
+        action, policy, value = mcts.run(NUM_MCTS_STEPS)
 
         # action = env.action_space.sample()
         # value = 1
@@ -140,8 +142,8 @@ def process_update_dataset(process_id, seed, states_shm, values_shm, policies_sh
         policies[idx, :] = policy[:]
 
     
-        idx_reduced_action_space = np.argmax(policy)
-        action = reduced_action_space[idx_reduced_action_space]
+        # idx_reduced_action_space = np.argmax(policy)
+        # action = reduced_action_space[idx_reduced_action_space]
 
         state, reward, done, _  = env.step(action)
  

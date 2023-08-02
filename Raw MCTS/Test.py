@@ -6,16 +6,16 @@ from CandyCrushUtiles import *
 from Raw_MCTS import *
 
 
+for i in range(50):
+    env = CandyCrushGym()
 
-env = CandyCrushGym()
+    state = env.reset()
 
-state = env.reset()
+    mcts = Raw_MCTS(env)
 
-mcts = Raw_MCTS(env)
+    mcts.run(50)
 
-mcts.run(50)
-
-mcts.get_policy()
+    mcts.get_policy()
 #FIELD_SIZE = 3
 
 #top_actions = [FIELD_SIZE * 4 + (FIELD_SIZE + 1) * i for i in range((FIELD_SIZE * FIELD_SIZE) - FIELD_SIZE)]

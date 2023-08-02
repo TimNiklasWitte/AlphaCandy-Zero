@@ -253,7 +253,7 @@ class Raw_MCTS:
 
     def get_value(self):
         v = self.root.v / self.root.n
-
+        print(v)
         return v
 
     
