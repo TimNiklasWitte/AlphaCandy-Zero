@@ -34,9 +34,9 @@ import tensorflow as tf
 
 from PlayGameConfig import *
 
-show_arrow_time = 0.5
-show_swap_time = 0.5
-show_empty_time = 0.5
+show_arrow_time = 1
+show_swap_time = 1
+show_empty_time = 1
 drop_candy_time = 0.03
 
 
@@ -173,40 +173,19 @@ def display_execute_action(action, env, window):
 
 def main():
 
-    # actions_1 = get_reduced_action_space()
-    # actions_2 = get_reduced_action_space_alternative()
-
-    # print(actions_1)
-
-    # print(actions_2)
-
- 
-    # for a1, a2 in zip(actions_1, actions_2):
-    #     print(get_x_y_direction(a1), " = ", get_x_y_direction(a2))
-
-    # #     print(actions_1[i], get_x_y_direction(actions_1[i]), " = ", actions_2[i], get_x_y_direction(actions_2[i]))
-    # #     #print(actions_2[i], get_x_y_direction(actions_2[i]))
-    # #     #print(actions_1[i], get_x_y_direction(actions_1[i]))
-    # return 
-    # episode_len = 10
-    # field_size = 6
-    # num_candys = 4
-    
+  
     #
     # Program args handling
     #
 
     # Set up ArgumentParser
-    # parser = argparse.ArgumentParser(description="The Decision Transformer plays Candy Crush.")
-    # parser.add_argument("--field_size", help="Set the field size (default = 8).", type=checkFieldSize, required=False, default=8)
-    # parser.add_argument("--num_candys", help="Set the number of candys (default = 4).", type=checkNumCandys, required=False, default=4)
-    # parser.add_argument("--desired_reward", help="Set the desired reward (default = 0.25)", required=False, default=0.25)
-
+    parser = argparse.ArgumentParser(description="The Decision Transformer plays Candy Crush.")
+  
     # parser.add_argument("--mode", help="Define the window mode (default: \"0\") \"0\" = game window or \"1\" = game window with plots", type=checkMode, required=False, default="0")
-    # parser.add_argument("--gif", help="File path where the GIF (screenshots of the window) will be saved.", required=False)
+    parser.add_argument("--gif", help="File path where the GIF (screenshots of the window) will be saved.", required=False)
     
 
-    # args = parser.parse_args()
+    args = parser.parse_args()
 
     # Load args
     # field_size = args.field_size
@@ -218,10 +197,11 @@ def main():
     # if args.mode == "1":
     #     show_plots = True
 
-    # gif_path = ""
-    # if args.gif != None:
-    #     gif_path = args.gif
+    gif_path = ""
+    if args.gif != None:
+        gif_path = args.gif
     
+
     reduced_action_space = get_reduced_action_space()
     len_reduced_action_space = len(reduced_action_space)
     policyValueNetwork = PolicyValueNetwork(len_reduced_action_space)
@@ -244,11 +224,20 @@ def main():
     window.update_game_field()
 
     
-
     # best_action, policy, value, done = mcts.step(return_policy=True)
     # print(list(policy))
 
     window.update_reward_value_statistics_plot(0, 0, 0, 0, init=True)
+
+
+    #
+    # Thread: creating gif (periodically create a screenshot)
+    #
+    thread = Thread(target = record, args = (window, gif_path, ))
+    if gif_path != "":
+        print("start")
+        thread.start()
+
 
     for num_step in range(30):
         
@@ -295,148 +284,6 @@ def main():
         predicated_value = predicated_value[0] # remove batch dim
         window.update_reward_value_statistics_plot(reward, value, predicated_value, num_step)
 
-    #state = stateToImageConverter(state)
-
-    # plt.imshow(state)
-    # plt.show()
-
-    # state_img = stateToImageConverter(state)
-    # state_img = tf.expand_dims(state_img, axis=0)
-    #policy, value = policyValueNetwork(state_img)
-
-    #policy = policy[0] # remove batch dim
-    
- 
-
-    #window = Window(env, False)
-
-    #window.update_game_field()
-    
-    #state, reward, done, _ = env.step(best_action)
-    
-
-
-    
-
-    # print(reward)
-
-    # window.update_game_field()
-
-    # state = env.reset()
-
-    # buff_states = np.zeros(shape=(1, episode_len, field_size, field_size), dtype=np.uint8)
-    # buff_actions = np.zeros(shape=(1, episode_len,), dtype=np.uint8)
-    # buff_rewards = np.zeros(shape=(1, episode_len,), dtype=np.float32)
-
-    
-
-    # buff_states[0, 0, :, :] = state
-    # buff_rewards[0, 0] = desired_reward
-
-    
-    # none_action_id = num_actions + 1
-    # buff_actions[0, 0:episode_len] = none_action_id
-
-    # window.update_plots(0, np.zeros(shape=(num_actions,)), desired_reward, update_stats=False)
-
-    # #
-    # # Thread: creating gif (periodically create a screenshot)
-    # #
-    # thread = Thread(target = record, args = (window, gif_path, ))
-    # if gif_path != "":
-    #     thread.start()
-
-    # while True:
-            
-    #     window.update_game_field()
-        
-    #     reward = 0
-    #     episode_idx = 0
-            
-    #     cnt_zero = 0
-
-    #     current_state = np.copy(env.state)
-    #     while reward == 0:
-
-    #         #
-    #         # Preprocess
-    #         #
-
-    #         # onehotify states
-    #         states = np.reshape(buff_states, newshape=(1*episode_len*field_size*field_size))
-    #         num_one_hot = 26 # num of candys
-    #         states = tf.one_hot(states, depth=num_one_hot)
-    #         states = tf.reshape(states, shape=(1, episode_len, field_size, field_size, num_one_hot))
-
-    #         # onehotify actions
-    #         num_actions = field_size*field_size*4 + 1
-    #         actions = tf.one_hot(buff_actions, depth=num_actions)
-
-    #         action = decisionTransformer(states, actions, buff_rewards)
-    #         action = action[0] # remove batch dim
-
-    #         best_action = np.argmax(action)
-
-    #         # invalid action -> choose valid action
-    #         if not env.isValidAction(best_action):
-    #             best_action = 2
-
-    #         next_state, reward, _, _ = env.step(best_action)
-     
-    #         state = next_state
-
-    #         episode_idx += 1
-
-        
-    #         if episode_idx < episode_len - 1:
-
-    #             buff_states[0, episode_idx, :, :] = state
-    #             buff_rewards[0, episode_idx] = desired_reward
-    #             buff_actions[0, episode_idx] = best_action
-
-    #         else:
-                    
-    #             buff_states[0, 0:episode_len-1, :, :] = buff_states[0, 1:episode_len, :, :]
-    #             buff_states[0, -1, :, :] = state
-
-    #             buff_rewards[0, 0:episode_len-1] = buff_rewards[0, 1:episode_len]
-    #             buff_rewards[0, -1] = 0.25
-
-    #             buff_actions[0, 0:episode_len-1] = buff_actions[0, 1:episode_len]
-    #             buff_actions[0, -1] = best_action
-
-
-    #         if reward == 0:
-    #             cnt_zero += 1
-    #         else:
-    #             cnt_zero = 0
-                
-    #         if cnt_zero == episode_len:
-
-
-    #             buff_states = np.zeros(shape=(1, episode_len, field_size, field_size), dtype=np.uint8)
-    #             buff_actions = np.zeros(shape=(1, episode_len,), dtype=np.uint8)
-    #             buff_rewards = np.zeros(shape=(1, episode_len,), dtype=np.float32)
-
-    #             buff_states[0, 0, :, :] = state
-    #             buff_rewards[0, 0] = desired_reward
-
-    #             none_action_id = field_size*field_size*4 + 1
-    #             buff_actions[0, 0:episode_len] = none_action_id
-
-    #             state = env.reset()
-    #             current_state = np.copy(env.state)
-    #             window.update_game_field()
-    #             episode_idx = 0
-
-    #             cnt_zero = 0
-      
-        
-
-    #     env.state = current_state
-    #     display_execute_action(best_action, action[:-1], desired_reward, env, window)
-
-
 
 def record(window, gif_path):
     with imageio.get_writer(gif_path, mode='I') if gif_path != "" else dummy_context_mgr() as gif_writer:
@@ -444,6 +291,7 @@ def record(window, gif_path):
         while True:
 
             img = get_window_image(window)
+           
             gif_writer.append_data(img)
             
             time.sleep(0.5)

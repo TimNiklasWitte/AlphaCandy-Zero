@@ -202,7 +202,7 @@ class Display(tk.Frame):
 
         if best_action != best_action_previous_policy:
             self.mcts_step_best_action_changed.append(num_mcts_step)
-            print(get_x_y_direction(best_action))
+            #print(get_x_y_direction(best_action))
                 
      
     
@@ -385,7 +385,7 @@ class Display(tk.Frame):
         max_prob = np.max(policy)
        
         self.fig_policy.clf()
-        self.fig_policy.suptitle(f"Policy $\pi$(a=(x, y, {{top, right, down, left}})|s$)_{{t={num_mcts_step}}}$ \nMCTS step: {num_mcts_step}/{NUM_MCTS_STEPS}")
+        self.fig_policy.suptitle(f"Policy $\pi$(a=(x, y, {{top, right, down, left}})|s$)_{{t={num_mcts_step}}}$ \nMCTS step t={num_mcts_step} of {NUM_MCTS_STEPS}")
 
         #
         # Action: Top
