@@ -158,3 +158,48 @@ def get_reduced_action_space():
 
     return reduced_action_space
 
+
+def get_reduced_action_space_alternative():
+
+    reduced_action_space = []
+
+    actions_left = []
+    actions_down = [] 
+    for action in range(FIELD_SIZE * FIELD_SIZE * 4):
+        if isValidAction(action):
+            
+            direction = action % NUM_DIRECTIONS
+
+            # top
+            if direction == 0:
+                reduced_action_space.append((action, 0))
+            # right
+            elif direction == 1:
+                reduced_action_space.append((action, 1))
+            # down
+            elif direction == 2:
+                actions_down.append(action)
+            # left
+            elif direction == 3:
+                actions_left.append(action)
+    
+    reduced_action_space_alternative = []
+
+    for action, direction in reduced_action_space:
+
+        # top
+        if direction == 0:
+            action = actions_down.pop(0)
+            reduced_action_space_alternative.append(action)
+        # right
+        elif direction == 1:
+            action = actions_left.pop(0)
+        
+            reduced_action_space_alternative.append(action)
+
+    reduced_action_space_alternative = np.array(reduced_action_space_alternative)
+
+    return reduced_action_space_alternative
+
+
+

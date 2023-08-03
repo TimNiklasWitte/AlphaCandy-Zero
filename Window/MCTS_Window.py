@@ -6,15 +6,15 @@ from Config import *
 from Utils import *
 from CandyCrushUtiles import *
 
-class Node:
-    def __init__(self, parent, state, action, reward):
+c_puct = 2
 
-        self.q = 0
-        self.reward = 0
+class Node:
+    def __init__(self, parent, state, action, action_idx, p):
 
         self.n = 0
-
-        self.c = 2
+        self.w = 0
+        self.q = 0
+        self.p = p
 
         self.parent = parent
         self.childrens = []
@@ -22,18 +22,19 @@ class Node:
         self.state = state
 
         self.action = action
+        self.action_idx = action_idx
 
         self.done = False
 
     @property
     def UCT(self):
         
-        if self.n == 0:
-            return np.inf 
+        if self.parent.n == 0:
+            return np.inf
 
         # Upper Confidence Bound 1
-        UCB1 = self.c * np.sqrt( np.log(self.parent.n) / self.n )
-
+        UCB1 = c_puct * np.sqrt( np.log(self.parent.n) / (1 + self.n) )
+        
         # Upper Confidence Trees = MCTS + UCB1
         return self.q + UCB1 
 
@@ -44,22 +45,14 @@ class MCTS_Window:
         self.N = 0
 
         self.env = env
-        self.root = Node(parent=None, state=env.state, action=-1, reward=-1)
-
-        self.NUM_ROLLOUT_STEPS = 4
-        self.gamma = 0.99
-        self.discount_factors = np.array([self.gamma**i for i in range(self.NUM_ROLLOUT_STEPS)])
-
-
-        valid_actions = [action for action in range(self.env.action_space.n) if isValidAction(action)]
-        self.valid_actions = np.array(valid_actions)
-
-        invalid_actions = [action for action in range(self.env.action_space.n) if not isValidAction(action)]
-        self.invalid_actions = np.array(invalid_actions)
+        self.root = Node(parent=None, state=env.state, action=-1, action_idx=-1, p=1)
 
         self.policyValueNetwork = policyValueNetwork
         self.stateToImageConverter = stateToImageConverter
 
+
+        self.reduced_action_space = get_reduced_action_space()
+        self.num_actions = len(self.reduced_action_space)
 
         self.current = self.root
 
@@ -78,163 +71,153 @@ class MCTS_Window:
             UCT_values = [node.UCT for node in self.current.childrens if not node.done]
 
             if len(UCT_values) == 0:
-                if return_policy:
-                    return self.get_best_action(), self.get_policy(), self.root.q, False
-                else:
-                    return 
+                
+                self.current.done = True 
 
+                # every possible action in root node leads to terminal state 
+                if self.current.parent == None:
+                    self.env.state = state_env
+                    if return_policy:
+                        return self.get_best_action(), self.get_policy(), self.get_value()
+                    else:
+                        return 
+                        
+                self.current = self.current.parent
+                continue
+            
             max_idx = np.argmax(UCT_values)
             self.current = self.current.childrens[max_idx]
         
+
         #
-        # Rollout?
-        #   
-        if self.current.n == 0:
-            G = self.rollout(self.current)
-            self.backpropagate(self.current, G)
+        # Expand and evaluate
+        #
 
-        else:
+        # Evaluate
+        state = self.current.state
+        state_img = self.stateToImageConverter(state)
+        
+        state_img = np.expand_dims(state_img, axis=0)
 
-            #
-            # Node expansion
-            #
+        policy, value = self.policyValueNetwork(state_img)
+        
+        # remove batch dim
+        policy = policy[0] 
+        value = value[0][0] # and raw value (no array)
+
+
+        # Expand
+        state_current = np.copy(self.current.state)
+        can_not_expand = True
+        for action_idx, action in enumerate(self.reduced_action_space):
+             
+            self.env.state = state_current
+
+            next_state, reward, _, _ = self.env.step(action)
+                  
+
+            if reward != 0:
+                can_not_expand = False 
+                next_state = np.copy(next_state)
+                node = Node(parent=self.current, state=next_state, action=action, action_idx=action_idx, p=policy[action_idx])
+
+                self.current.childrens.append(node)
+
+                state_current = np.copy(self.current.state)
+
+
+        if can_not_expand:
+
+            self.current.done = True
                 
-            state_current = np.copy(self.current.state)
-            can_not_expand = True
-            for action in self.valid_actions:
-                    
-                self.env.state = state_current
+            if self.current == self.root:
+                self.env.state = state_env
+                #return 1, 0
 
-                next_state, reward, _, _ = self.env.step(action)
-                        
-                if reward != 0:
-                    can_not_expand = False 
-                    next_state = np.copy(next_state)
-                    node = Node(parent=self.current, state=next_state, action=action, reward=reward)
-                    self.current.childrens.append(node)
+                if return_policy: 
+                    return self.get_best_action(), self.get_policy(), self.get_value()
+                else:
+                    return 
 
-                    state_current = np.copy(self.current.state)
-                
-            if can_not_expand:
-                self.current.done = True
 
-                if self.current == self.root:
-                    if return_policy:
-                        return None, None, None, True
-                    else:
-                        return 
+        #
+        # Backup
+        #
+        self.backup(self.current, value)
+
 
         self.env.state = state_env
         
         if not first_run:
             if return_policy:
-                return self.get_best_action(), self.get_policy(), self.root.q, False
+                return self.get_best_action(), self.get_policy(), self.root.q
             else:
                 return 
-    
-
-    def get_policy(self):
-        
-        q_values = [node.q for node in self.root.childrens] 
-        q_values = np.array(q_values)
-        q_values = q_values + 0.000001
-        policy_probs = q_values / q_values.sum()
-
-        actions = [node.action for node in self.root.childrens] 
-        actions = np.array(actions)
-
-       
-
-        return list(zip(actions, policy_probs))      
-
-    def get_best_action(self):
-
-        #
-        # Determine best action
-        #
-
-        q_values = [node.q for node in self.root.childrens]
-
-        max_idx = np.argmax(q_values)
-
-        best_action = self.root.childrens[max_idx].action
-
-        return best_action
-
-        
-    def rollout(self, node):
-        
-        state_env = np.copy(self.env.state)
-
-        self.env.state = np.copy(node.state)
-
-
-        reward_list = []
-
-        
-        state = node.state
-
-        for i in range(self.NUM_ROLLOUT_STEPS):
-            
-            state_img = self.stateToImageConverter(state)
-            state_img = np.expand_dims(state_img, axis=0)
-
-            policy, _ = self.policyValueNetwork(state_img)
-            policy = np.array(policy[0])
-
-            num_iterations = 0
-            terminate_rollout = False
-
-            # convert + normalize -> prevent error by np.random.choice 
-            policy = policy.astype('float64')
-            policy /= policy.sum()  
-            while True:
-                
-                
-                action = np.random.choice(np.arange(NUM_ACTIONS), p=policy)
-               
-
-                if isValidAction(action):
-                    next_state, reward, _, _ = self.env.step(action)
-
-                    if reward != 0:
-                        reward_list.append(reward)
-                        break 
-
-                    if num_iterations > 1000:
-                        terminate_rollout = True 
-                        break 
-                
-                    num_iterations += 1
-
-            if terminate_rollout:
-                break 
-                
 
     
-        rewards = np.array(reward_list)
-        
-        # cumulative discounted reward
-        G = np.dot(self.discount_factors[:len(rewards)], rewards)
-
-        self.env.state = state_env
-
-        return G
-    
-
-    def backpropagate(self, node, G):
+    def backup(self, node, v):
 
         current = node
-
+        
         while current:
             
-            G = current.reward + self.gamma * G
             current.n += 1
-            
-            current.q = current.q + 1/current.n * (G - current.q)
+            current.w += v
+
+            current.q = current.w / current.n
 
             current = current.parent
 
+    def get_best_action(self):
+
+        n_values = np.array([node.n for node in self.root.childrens])
+        n_total = np.sum(n_values)
+
+        # no action can be selected 
+        if n_total == 0:
+            return self.reduced_action_space[0]
+
+        policy = n_values / n_total
+        max_idx = np.argmax(policy)
+     
+        best_action = self.root.childrens[max_idx].action
+
+        return best_action
+    
+
+    def get_policy(self):
+
+        n_values = np.array([node.n for node in self.root.childrens])
+        n_total = np.sum(n_values)
+
+        if n_total == 0:
+            return np.full(shape=(NUM_ACTIONS,), fill_value=1/NUM_ACTIONS, dtype=POLICY_DTYPE)
+        
+       
+        policy = np.zeros(shape=(NUM_ACTIONS,) , dtype=POLICY_DTYPE)
+        
+        probs = n_values / n_total
+
+        actions = [node.action_idx for node in self.root.childrens]
+        policy[actions] = probs
+
+        
+        reduced_action_space_alternative = get_reduced_action_space_alternative()
+        action_idxs = [node.action_idx for node in self.root.childrens]
+        equivalent_action_idxs = reduced_action_space_alternative[action_idxs]
+
+        policy[equivalent_action_idxs] = probs
+
+        policy /= policy.sum()
+
+        return policy
+
+
+    def get_value(self):
+        
+        q_root = self.root.w / self.root.n
+     
+        return q_root
            
 
             

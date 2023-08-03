@@ -185,11 +185,11 @@ class Display(tk.Frame):
     
     def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False):
 
-        actions, probs = zip(*policy)
+        #actions, probs = zip(*policy)
 
-        probs = np.array(probs)
+        #robs = np.array(probs)
         if len(self.steps_mcts) == 0:
-            self.previous_policy = probs
+            self.previous_policy = policy
             self.steps_mcts.append(num_mcts_step)
 
             self.previous_value = value
@@ -199,21 +199,21 @@ class Display(tk.Frame):
         
 
         best_action_previous_policy = np.argmax(self.previous_policy)
-        best_action_previous_policy = actions[best_action_previous_policy]
+        #best_action_previous_policy = policy[best_action_previous_policy]
 
-        best_action = np.argmax(probs)
-        best_action = actions[best_action] 
+        best_action = np.argmax(policy)
+        #best_action = actions[best_action] 
         if best_action != best_action_previous_policy:
             self.mcts_step_best_action_changed.append(num_mcts_step)
-
+            print(best_action)
             best_action = get_x_y_direction(best_action)
             self.best_action_changed_labels.append(f"({best_action})")
 
 
         
         #diff_policy = np.abs(probs - self.previous_policy)
-        avg_diff = KL(probs, self.previous_policy)
-        self.previous_policy = probs
+        avg_diff = KL(policy, self.previous_policy)
+        self.previous_policy = policy
 
 
 
@@ -352,7 +352,7 @@ class Display(tk.Frame):
         if not self.show_plots:
             return
 
-        actions, probs = zip(*policy)
+        #actions, probs = zip(*policy)
 
         
         action_top = np.zeros(shape=(self.env.FIELD_SIZE, self.env.FIELD_SIZE), dtype=np.float32)
@@ -360,7 +360,7 @@ class Display(tk.Frame):
         action_down = np.zeros(shape=(self.env.FIELD_SIZE, self.env.FIELD_SIZE), dtype=np.float32)
         action_left = np.zeros(shape=(self.env.FIELD_SIZE, self.env.FIELD_SIZE), dtype=np.float32)
 
-        for action_idx, action in enumerate(actions):
+        for action in range(NUM_ACTIONS):
 
             fieldID = action // self.env.NUM_DIRECTIONS
 
@@ -371,21 +371,21 @@ class Display(tk.Frame):
 
             # top
             if direction == 0:
-                action_top[y,x] = probs[action_idx]
+                action_top[y,x] = policy[action]
             # down
             elif direction == 2: 
-                action_down[y,x] = probs[action_idx]
+                action_down[y,x] = policy[action]
             # right 
             elif direction == 1:
-                action_right[y,x] = probs[action_idx]
+                action_right[y,x] = policy[action]
             # left 
             elif direction == 3:
-                action_left[y,x] = probs[action_idx]
+                action_left[y,x] = policy[action]
 
 
-        min_prob = np.min(probs)
-        max_prob = np.max(probs)
-        
+        min_prob = np.min(policy)
+        max_prob = np.max(policy)
+       
         self.fig_policy.clf()
         self.fig_policy.suptitle(f"Policy $\pi$(a=(x, y, {{top, right, down, left}})|s$)_{{t={num_mcts_step}}}$ \nMCTS step: {num_mcts_step}/{NUM_MCTS_STEPS}")
 

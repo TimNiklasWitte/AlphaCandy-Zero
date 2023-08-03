@@ -173,6 +173,21 @@ def display_execute_action(action, env, window):
 
 def main():
 
+    # actions_1 = get_reduced_action_space()
+    # actions_2 = get_reduced_action_space_alternative()
+
+    # print(actions_1)
+
+    # print(actions_2)
+
+ 
+    # for a1, a2 in zip(actions_1, actions_2):
+    #     print(get_x_y_direction(a1), " = ", get_x_y_direction(a2))
+
+    # #     print(actions_1[i], get_x_y_direction(actions_1[i]), " = ", actions_2[i], get_x_y_direction(actions_2[i]))
+    # #     #print(actions_2[i], get_x_y_direction(actions_2[i]))
+    # #     #print(actions_1[i], get_x_y_direction(actions_1[i]))
+    # return 
     # episode_len = 10
     # field_size = 6
     # num_candys = 4
@@ -206,9 +221,11 @@ def main():
     # gif_path = ""
     # if args.gif != None:
     #     gif_path = args.gif
-
-    policyValueNetwork = PolicyValueNetwork()
-    policyValueNetwork.load_weights(f"../saved_model/trained_weights_3").expect_partial()
+    
+    reduced_action_space = get_reduced_action_space()
+    len_reduced_action_space = len(reduced_action_space)
+    policyValueNetwork = PolicyValueNetwork(len_reduced_action_space)
+    policyValueNetwork.load_weights(f"../saved_model/trained_weights_10").expect_partial()
    
     seed = np.random.randint(0, 500000)
     print(seed)
@@ -246,19 +263,19 @@ def main():
             
             if num_mcts_step % NUM_MCTS_SUB_STEPS_PLOT == 0:
                 
-                best_action, policy, value, done = mcts.step(return_policy=True)
+                best_action, policy, value = mcts.step(return_policy=True)
 
                 window.update_policy_plot(policy, num_mcts_step)
                 window.update_policy_value_statistics_plot(policy, value, num_mcts_step, show=True)
 
                 
             else:
-                best_action, policy, value, done = mcts.step(return_policy=True)
+                best_action, policy, value = mcts.step(return_policy=True)
                 
                 window.update_policy_value_statistics_plot(policy, value, num_mcts_step, show=False)
 
 
-        best_action, policy, value, done = mcts.step(return_policy=True)
+        best_action, policy, value = mcts.step(return_policy=True)
         
         window.update_policy_value_statistics_plot(policy, value, NUM_MCTS_STEPS, show=True)
         window.update_policy_plot(policy, NUM_MCTS_STEPS)
