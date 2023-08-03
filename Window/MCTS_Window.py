@@ -198,7 +198,7 @@ class MCTS_Window:
         
         probs = n_values / n_total
 
-        actions = [node.action_idx for node in self.root.childrens]
+        actions = [node.action for node in self.root.childrens]
         policy[actions] = probs
 
         

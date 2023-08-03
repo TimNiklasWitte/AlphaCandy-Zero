@@ -34,9 +34,9 @@ import tensorflow as tf
 
 from PlayGameConfig import *
 
-show_arrow_time = 2
-show_swap_time = 2
-show_empty_time = 1
+show_arrow_time = 0.5
+show_swap_time = 0.5
+show_empty_time = 0.5
 drop_candy_time = 0.03
 
 

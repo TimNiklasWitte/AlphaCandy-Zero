@@ -110,9 +110,10 @@ class Display(tk.Frame):
         self.policy_diffs = []
         self.previous_policy = None
 
-        self.best_action_changed_labels = []
+        self.best_action_changed = []
         self.mcts_step_best_action_changed = []
-
+        self.best_action_colors = {}
+        self.color_idx = 0
 
         self.previous_value = 0
         self.value_diffs = []
@@ -177,14 +178,12 @@ class Display(tk.Frame):
         self.previous_value = 0
         self.value_diffs = []
 
-
         self.mcts_step_best_action_changed = []
-        self.best_action_changed_labels = []
-
 
     
     def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False):
 
+    
         #actions, probs = zip(*policy)
 
         #robs = np.array(probs)
@@ -197,20 +196,16 @@ class Display(tk.Frame):
         
        
         
-
+      
         best_action_previous_policy = np.argmax(self.previous_policy)
-        #best_action_previous_policy = policy[best_action_previous_policy]
-
         best_action = np.argmax(policy)
-        #best_action = actions[best_action] 
+
         if best_action != best_action_previous_policy:
             self.mcts_step_best_action_changed.append(num_mcts_step)
-            print(best_action)
-            best_action = get_x_y_direction(best_action)
-            self.best_action_changed_labels.append(f"({best_action})")
-
-
-        
+            print(get_x_y_direction(best_action))
+                
+     
+    
         #diff_policy = np.abs(probs - self.previous_policy)
         avg_diff = KL(policy, self.previous_policy)
         self.previous_policy = policy
@@ -238,6 +233,7 @@ class Display(tk.Frame):
 
     
             plt_policy_statistics.set_xlim(left=0, right=NUM_MCTS_STEPS)
+            plt_policy_statistics.set_ylim(0,1)
             plt_policy_statistics.set_title("Policy changes $\Delta \pi(t) = \mathrm{{KL}}(\pi_t || \pi_{{t-1}})$ \n State value changes $ \Delta v(t) = |v(s)_t - v(s)_{t-1}|$") 
             plt_policy_statistics.set_xlabel("MCTS step t")
             plt_policy_statistics.set_ylabel("$\Delta \pi(t)$", color="r")
@@ -252,27 +248,29 @@ class Display(tk.Frame):
             #
             # history of best actions
             #
-     
-            cmap = get_cmap("Set2")  
-            len_actions = len(self.mcts_step_best_action_changed)
-            colors = cmap.colors 
-            len_colors = len(colors)
 
-            idx = 0
-            if len_actions - 5 >= 0:
-                for mcts_step, best_action in zip(self.mcts_step_best_action_changed[:len_actions - 5], self.best_action_changed_labels[:len_actions - 5]):
-                    plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors])
+            if len(self.mcts_step_best_action_changed) != 0:
+                mcts_step = self.mcts_step_best_action_changed[0]
+                plt_value_statistics.axvline(x=mcts_step, color="darkgrey", label="Best action changed", alpha=0.7)
 
-                    idx += 1
+                for mcts_step in self.mcts_step_best_action_changed[1:]:
+                    plt_value_statistics.axvline(x=mcts_step, color="darkgrey", alpha=0.7)
 
-            tmp = max(0,len_actions - 5)
-            for mcts_step, best_action in zip(self.mcts_step_best_action_changed[tmp:], self.best_action_changed_labels[tmp:]):
+            # idx = 0
+            # if len_actions - 5 >= 0:
+            #     for mcts_step, best_action in zip(self.mcts_step_best_action_changed[:len_actions - 5], self.best_action_changed_labels[:len_actions - 5]):
+            #         plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors])
+
+            #         idx += 1
+
+            # tmp = max(0,len_actions - 5)
+            # for mcts_step, best_action in zip(self.mcts_step_best_action_changed[tmp:], self.best_action_changed_labels[tmp:]):
                 
-                plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors], label=best_action)
+            #     plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors], label=best_action)
 
-                idx += 1
+            #     idx += 1
 
-            plt_value_statistics.legend(title="a = ", loc="upper right")
+            plt_value_statistics.legend(title=f"a = ({get_x_y_direction(best_action)})", loc="upper right", prop={'size': 10})
 
 
 
