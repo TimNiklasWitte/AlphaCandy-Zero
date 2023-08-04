@@ -43,7 +43,7 @@ python3 ./Training.py
 ### Window 
 
 Run `./Window/PlayGame.py` to watch the AlphaCandy Zero play Candy Crush.
-Besides that, a GIF can also be created and specific weights can be loaded.
+Besides that, a GIF can be created and specific weights can be loaded.
 
 ```
 python3 ./Window/PlayGame.py
@@ -112,3 +112,14 @@ optional arguments:
 - argparse
 - imageio
 - pyautogui
+
+## Notice
+
+This project is the final project of the *Scientific Programming in Python course* at the University Osnabrueck (summer semester 2023). 
+The Candy Crush gym and the window (watch the agent play the game) were already developed for the final project called [AlphaCandy](https://github.com/TimNiklasWitte/AlphaCandy) of the *Deep Reinforcement Learning* (DRL) course at the University Osnabrueck (summer semester 2022). 
+Both were slightly adapted for the MCTS setting. 
+Note that, in the final project of the DRL course three different agents were developed which can play Candy Crush. 
+These agents are based on:
+* Deep Q-Network
+* PPO (Proximal Policy Optimization)
+* Decision Transformer
