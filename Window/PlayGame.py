@@ -219,10 +219,12 @@ def main():
 
     window.update_game_field()
 
+    zero_policy = np.zeros(shape=(NUM_ACTIONS,), dtype=np.float32)
+    window.update_policy_plot(policy=zero_policy, num_mcts_step=0)
   
     window.update_reward_value_statistics_plot(0, 0, 0, 0, init=True)
 
-
+    
     #
     # Thread: creating gif (periodically create a screenshot)
     #

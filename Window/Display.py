@@ -354,6 +354,8 @@ class Display(tk.Frame):
         if not self.show_plots:
             return
 
+
+    
         #actions, probs = zip(*policy)
 
         
