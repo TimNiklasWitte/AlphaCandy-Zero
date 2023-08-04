@@ -182,7 +182,7 @@ def main():
     parser.add_argument("--mode", help="Define the window mode (default: \"0\") \"0\" = game window or \"1\" = game window with plots", type=checkMode, required=False, default="0")
     parser.add_argument("--gif", help="File path where the GIF (screenshots of the window) will be saved.", type=is_valid_name, required=False)
     parser.add_argument("--model", help="Set the path to the model weight's which will be loaded (without .index).", type=check_filePath, required=False, default="../saved_model/trained_weights_10")
-
+    parser.add_argument("--steps", help="Set the number of steps which the agent performs.", type=check_step_num, required=False, default="100")
     args = parser.parse_args()
 
     # Load args
@@ -194,6 +194,8 @@ def main():
     gif_path = ""
     if args.gif != None:
         gif_path = args.gif
+
+    step_num = args.steps
     
 
     model_weight_path = args.model 
@@ -234,7 +236,7 @@ def main():
         thread.start()
 
 
-    for num_step in range(30):
+    for num_step in range(step_num):
         
         mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
 

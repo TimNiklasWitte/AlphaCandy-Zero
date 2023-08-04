@@ -36,7 +36,20 @@ def check_filePath(path: str):
         raise argparse.ArgumentTypeError("The path to the model weight's does not exists.")
     
     return path 
+
+
+def check_step_num(num: str):
+
+    try:
+        num = int(num)
+    except:
+        raise argparse.ArgumentTypeError("The step number must be an integer.")
     
+
+    if num <= 0:
+        raise argparse.ArgumentTypeError("The step number must be positive and greater than zero")
+    
+    return num
 
 
 
