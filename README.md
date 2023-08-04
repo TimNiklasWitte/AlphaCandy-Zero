@@ -1,5 +1,5 @@
 # AlphaCandy-Zero
-## Mastering the game of Go without Candy Crush
+## Mastering the game of Candy Crush without Human Knowledge
 
 An AI-based on the [AlphaZero algorithm](https://www.deepmind.com/blog/alphazero-shedding-new-light-on-chess-shogi-and-go) is trained to play the game of Candy Crush. The implementation of this AI is based on the [AlphaGo Zero paper](https://www.deepmind.com/publications/mastering-the-game-of-go-without-human-knowledge).
 
@@ -41,6 +41,29 @@ python3 ./Training.py
 ```
 
 ### Window 
+
+Run `./Window/PlayGame.py` to watch the AlphaCandy Zero play Candy Crush.
+Besides that, a GIF can also be created and specific weights can be loaded.
+
+```
+python3 ./Window/PlayGame.py
+```
+
+```
+usage: PlayGame.py [-h] [--mode MODE] [--gif GIF] [--model MODEL]
+
+AlphaCandy Zero plays Candy Crush.
+
+optional arguments:
+  -h, --help     show this help message and exit
+  --mode MODE    Define the window mode (default: "0") "0" = game window or
+                 "1" = game window with plots
+  --gif GIF      File path where the GIF (screenshots of the window) will be
+                 saved.
+  --model MODEL  Set the path to the model weight's which will be loaded
+                 (without .index).
+```
+
 
 #### mode = 0
 

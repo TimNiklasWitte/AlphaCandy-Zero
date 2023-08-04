@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 
 from pathvalidate import ValidationError, validate_filename
+import os.path
 
 def checkMode(mode: str):
     """
@@ -17,13 +18,22 @@ def checkMode(mode: str):
     return mode
 
 
-def is_valid_path(path: str):
+def is_valid_name(path: str):
 
     try:
         validate_filename(path)
 
     except ValidationError:
-        raise argparse.ArgumentTypeError("Invalid gif path: This file path is not valid")
+        raise argparse.ArgumentTypeError("Invalid gif path/name: This file path/name is not valid")
+    
+    return path 
+
+
+def check_filePath(path: str):
+
+    path_tmp = path + ".index"
+    if not os.path.isfile(path_tmp):
+        raise argparse.ArgumentTypeError("The path to the model weight's does not exists.")
     
     return path 
     

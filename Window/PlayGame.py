@@ -180,17 +180,13 @@ def main():
     parser = argparse.ArgumentParser(description="AlphaCandy Zero plays Candy Crush.")
   
     parser.add_argument("--mode", help="Define the window mode (default: \"0\") \"0\" = game window or \"1\" = game window with plots", type=checkMode, required=False, default="0")
-    parser.add_argument("--gif", help="File path where the GIF (screenshots of the window) will be saved.", type=is_valid_path, required=False)
-    
+    parser.add_argument("--gif", help="File path where the GIF (screenshots of the window) will be saved.", type=is_valid_name, required=False)
+    parser.add_argument("--model", help="Set the path to the model weight's which will be loaded (without .index).", type=check_filePath, required=False, default="../saved_model/trained_weights_10")
 
     args = parser.parse_args()
 
     # Load args
-    # field_size = args.field_size
-    # num_candys = args.num_candys
-    # desired_reward = args.desired_reward
-
-
+    
     show_plots = False
     if args.mode == "1":
         show_plots = True
@@ -200,10 +196,12 @@ def main():
         gif_path = args.gif
     
 
+    model_weight_path = args.model 
+
     reduced_action_space = get_reduced_action_space()
     len_reduced_action_space = len(reduced_action_space)
     policyValueNetwork = PolicyValueNetwork(len_reduced_action_space)
-    policyValueNetwork.load_weights(f"../saved_model/trained_weights_10").expect_partial()
+    policyValueNetwork.load_weights(model_weight_path).expect_partial()
    
     seed = np.random.randint(0, 500000)
   

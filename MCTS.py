@@ -3,7 +3,7 @@ from CandyCrushGym import *
 
 from Config import *
 
-from Utils import *
+from CandyCrushUtiles import *
 
 c_puct = 2
 
