@@ -10,7 +10,7 @@ from LoadDataframe import *
 
 def main():
 
-    df = load_dataframe()
+    df = load_dataframe_tensors()
 
     fig, axes = plt.subplots(1, 3, figsize=(8,5))
 
