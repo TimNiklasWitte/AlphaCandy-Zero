@@ -13,8 +13,7 @@ from PolicyValueNetwork import *
 from StateToImageConverter import *
 from MCTS_Window import *
 
-from Util import *
-from Window import *
+from WindowUtils import *
 from MCTS import *
 
 from threading import Thread
@@ -173,16 +172,15 @@ def display_execute_action(action, env, window):
 
 def main():
 
-  
     #
     # Program args handling
     #
 
     # Set up ArgumentParser
-    parser = argparse.ArgumentParser(description="The Decision Transformer plays Candy Crush.")
+    parser = argparse.ArgumentParser(description="AlphaCandy Zero plays Candy Crush.")
   
-    # parser.add_argument("--mode", help="Define the window mode (default: \"0\") \"0\" = game window or \"1\" = game window with plots", type=checkMode, required=False, default="0")
-    parser.add_argument("--gif", help="File path where the GIF (screenshots of the window) will be saved.", required=False)
+    parser.add_argument("--mode", help="Define the window mode (default: \"0\") \"0\" = game window or \"1\" = game window with plots", type=checkMode, required=False, default="0")
+    parser.add_argument("--gif", help="File path where the GIF (screenshots of the window) will be saved.", type=is_valid_path, required=False)
     
 
     args = parser.parse_args()
@@ -193,9 +191,9 @@ def main():
     # desired_reward = args.desired_reward
 
 
-    # show_plots = False
-    # if args.mode == "1":
-    #     show_plots = True
+    show_plots = False
+    if args.mode == "1":
+        show_plots = True
 
     gif_path = ""
     if args.gif != None:
@@ -208,7 +206,7 @@ def main():
     policyValueNetwork.load_weights(f"../saved_model/trained_weights_10").expect_partial()
    
     seed = np.random.randint(0, 500000)
-    print(seed)
+  
     env = CandyCrushGym(seed)
 
     # isValidAction(4)
@@ -219,14 +217,11 @@ def main():
     state = env.reset()
 
 
-    window = Window(env, True)
+    window = Window(env, show_plots)
 
     window.update_game_field()
 
-    
-    # best_action, policy, value, done = mcts.step(return_policy=True)
-    # print(list(policy))
-
+  
     window.update_reward_value_statistics_plot(0, 0, 0, 0, init=True)
 
 
@@ -235,7 +230,7 @@ def main():
     #
     thread = Thread(target = record, args = (window, gif_path, ))
     if gif_path != "":
-        print("start")
+        time.sleep(1)
         thread.start()
 
 
@@ -269,14 +264,8 @@ def main():
         window.update_policy_value_statistics_plot(policy, value, NUM_MCTS_STEPS, show=True)
         window.update_policy_plot(policy, NUM_MCTS_STEPS)
         
-
-     
-
-        print(np.array2string(env.state, separator=","))
-        print(best_action)
         reward = display_execute_action(best_action, env, window)
-        print("--------")
-        print(np.array2string(env.state, separator=","))
+ 
 
         state_img = stateToImageConverter(env.state)
         state_img = tf.expand_dims(state_img, axis=0) # add batch dim

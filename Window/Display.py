@@ -12,7 +12,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from matplotlib.ticker import MaxNLocator
 
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 from matplotlib.cm import get_cmap
@@ -21,7 +20,7 @@ import numpy as np
 import sys
 
 from PlayGameConfig import *
-from Util import *
+from WindowUtils import *
 
 class Display(tk.Frame):
 
@@ -183,7 +182,9 @@ class Display(tk.Frame):
     
     def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False):
 
-    
+        if not self.show_plots:
+            return
+        
         #actions, probs = zip(*policy)
 
         #robs = np.array(probs)
@@ -280,6 +281,9 @@ class Display(tk.Frame):
 
 
     def update_reward_value_statistics_plot(self, reward, value, predicted_value, num_step, init=False):
+        
+        if not self.show_plots:
+            return
         
         self.fig_reward_statistics.clf()
 
