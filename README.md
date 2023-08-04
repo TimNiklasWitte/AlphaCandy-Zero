@@ -8,8 +8,9 @@ In summary, this AI is based on the Monte Carlo Tree Search (MCTS) algorithm. A 
 
 <img src="./Media/play_game_mode_0.gif" width="300" height="300">
 
+## Usage
 
-## Directory overview
+### Directory overview
 
 * **./**: Files for training.
 * **Media**: Contains `.png` and `.gif` files belonging to this `README.md`.
@@ -29,13 +30,25 @@ In summary, this AI is based on the Monte Carlo Tree Search (MCTS) algorithm. A 
     **Images**: Candy images (e.g normal, striped etc.) and images of the arrows which highlight the current action: top, down, left and right.
         * **Arrows**, **Normal**, **Striped** etc.
 
-## Usage
-
-### Directory overview
-
 
 ### Training
 
+Run `Training.py` to start the training. The configuration such as number of epochs, number of iterations of the current dataset etc. can be changed in the `Config.py` file.For each epoch the weights of the neural network will be saved into `./saved_model`. 
+Note that, the agent was already trained for 15 epochs. Executing `Training.py` will overwrite the stored weights in `./saved_model`.
+
+```
+python3 ./Training.py
+```
+
+### Window 
+
+#### mode = 0
+
+<img src="./Media/play_game_mode_0.gif" width="300" height="300">
+
+#### mode = 1
+
+<img src="./Media/play_game_mode_1.gif" width="1500" height="300">
 
 
 ## Evaluation
