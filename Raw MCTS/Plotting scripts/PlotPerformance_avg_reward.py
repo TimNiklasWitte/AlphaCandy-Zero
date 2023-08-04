@@ -27,7 +27,7 @@ def main():
 
     dfs = pd.concat(dfs)
     
-    rcParams['figure.figsize'] = 7, 6
+    rcParams['figure.figsize'] = 7, 7
     ax = sns.boxplot(data=dfs, x="Number of MCTS iterations", y="Average reward")
     ax.set(title='Average reward of vanilla MCTS')
     sns.despine(offset=10, trim=True)
