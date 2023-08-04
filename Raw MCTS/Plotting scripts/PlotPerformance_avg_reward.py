@@ -21,14 +21,15 @@ def main():
                     "Average reward": x}
 
         df = pd.DataFrame(data)
-
+        
         dfs.append(df)
 
     dfs = pd.concat(dfs)
-    print(dfs)
-    sns.boxplot(data=dfs, x="Number of MCTS iterations", y="Average reward")
+ 
+    ax = sns.boxplot(data=dfs, x="Number of MCTS iterations", y="Average reward")
+    ax.set(title='Average reward of vanilla MCTS')
     sns.despine(offset=10, trim=True)
-
+    plt.savefig("./Plots/Vanilla_MCTS_performance_avg_reward.png")
     plt.show()
 
 if __name__ == '__main__':
