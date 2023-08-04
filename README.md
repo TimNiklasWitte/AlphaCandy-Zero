@@ -1,4 +1,4 @@
-# AlphaCandy-Zero
+# AlphaCandy Zero
 ## Mastering the game of Candy Crush without Human Knowledge
 
 An AI-based on the [AlphaZero algorithm](https://www.deepmind.com/blog/alphazero-shedding-new-light-on-chess-shogi-and-go) is trained to play the game of Candy Crush. The implementation of this AI is based on the [AlphaGo Zero paper](https://www.deepmind.com/publications/mastering-the-game-of-go-without-human-knowledge).
