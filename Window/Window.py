@@ -42,8 +42,8 @@ class Window:
         self.display.update_policy_plot(policy, num_mcts_step)
     
 
-    def update_policy_value_statistics_plot(self, policy, value, num_step, show=False):
-        self.display.update_policy_value_statistics_plot(policy, value, num_step, show)
+    def update_policy_value_statistics_plot(self, policy, value, num_step, show=False, init=False):
+        self.display.update_policy_value_statistics_plot(policy, value, num_step, show, init)
 
     def reset_policy_statistics(self):
         self.display.reset_policy_statistics()

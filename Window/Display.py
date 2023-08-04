@@ -180,57 +180,50 @@ class Display(tk.Frame):
         self.mcts_step_best_action_changed = []
 
     
-    def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False):
+    def update_policy_value_statistics_plot(self, policy, value, num_mcts_step, show=False, init=False):
 
         if not self.show_plots:
             return
         
-        #actions, probs = zip(*policy)
+        if not init:
 
-        #robs = np.array(probs)
-        if len(self.steps_mcts) == 0:
+            if len(self.steps_mcts) == 0:
+                self.previous_policy = policy
+                self.steps_mcts.append(num_mcts_step)
+
+                self.previous_value = value
+                return 
+            
+        
+            
+            
+            best_action_previous_policy = np.argmax(self.previous_policy)
+            best_action = np.argmax(policy)
+
+            if best_action != best_action_previous_policy:
+                self.mcts_step_best_action_changed.append(num_mcts_step)
+            
+                    
+            avg_diff = KL(policy, self.previous_policy)
             self.previous_policy = policy
+
+
+            self.policy_diffs.append(avg_diff)
             self.steps_mcts.append(num_mcts_step)
 
+            value_diff = np.abs(value - self.previous_value)
+
             self.previous_value = value
-            return 
         
-       
-        
-      
-        best_action_previous_policy = np.argmax(self.previous_policy)
-        best_action = np.argmax(policy)
-
-        if best_action != best_action_previous_policy:
-            self.mcts_step_best_action_changed.append(num_mcts_step)
-            #print(get_x_y_direction(best_action))
-                
-     
-    
-        #diff_policy = np.abs(probs - self.previous_policy)
-        avg_diff = KL(policy, self.previous_policy)
-        self.previous_policy = policy
-
-
-
-        #avg_diff = np.sum(diff_policy)
-
-        
-
-        self.policy_diffs.append(avg_diff)
-        self.steps_mcts.append(num_mcts_step)
-
-        value_diff = np.abs(value - self.previous_value)
-
-        self.previous_value = value
-    
-        self.value_diffs.append(value_diff)
+            self.value_diffs.append(value_diff)
 
         if show:
             self.fig_policy_value_statistics.clf()
 
             plt_policy_statistics = self.fig_policy_value_statistics.subplots(1)
-            plt_policy_statistics.plot(self.steps_mcts[:-1], self.policy_diffs, color="r")
+
+            if not init:
+                plt_policy_statistics.plot(self.steps_mcts[:-1], self.policy_diffs, color="r")
 
     
             plt_policy_statistics.set_xlim(left=0, right=NUM_MCTS_STEPS)
@@ -242,38 +235,26 @@ class Display(tk.Frame):
 
             plt_value_statistics = plt_policy_statistics.twinx()
 
-            plt_value_statistics.plot(self.steps_mcts[:-1], self.value_diffs, color="b")
+            if not init:
+                plt_value_statistics.plot(self.steps_mcts[:-1], self.value_diffs, color="b")
+           
             plt_value_statistics.set_ylabel("$\Delta v(t)$", color="b")
 
 
-            #
-            # history of best actions
-            #
+            if not init:
+                #
+                # history of best actions
+                #
 
-            if len(self.mcts_step_best_action_changed) != 0:
-                mcts_step = self.mcts_step_best_action_changed[0]
-                plt_value_statistics.axvline(x=mcts_step, color="darkgrey", label="Best action changed", alpha=0.7)
+                if len(self.mcts_step_best_action_changed) != 0:
+                    mcts_step = self.mcts_step_best_action_changed[0]
+                    plt_value_statistics.axvline(x=mcts_step, color="darkgrey", label="Best action changed", alpha=0.7)
 
-                for mcts_step in self.mcts_step_best_action_changed[1:]:
-                    plt_value_statistics.axvline(x=mcts_step, color="darkgrey", alpha=0.7)
-
-            # idx = 0
-            # if len_actions - 5 >= 0:
-            #     for mcts_step, best_action in zip(self.mcts_step_best_action_changed[:len_actions - 5], self.best_action_changed_labels[:len_actions - 5]):
-            #         plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors])
-
-            #         idx += 1
-
-            # tmp = max(0,len_actions - 5)
-            # for mcts_step, best_action in zip(self.mcts_step_best_action_changed[tmp:], self.best_action_changed_labels[tmp:]):
-                
-            #     plt_value_statistics.axvline(x=mcts_step, color=colors[idx % len_colors], label=best_action)
-
-            #     idx += 1
-
-            plt_value_statistics.legend(title=f"a = ({get_x_y_direction(best_action)})", loc="upper right", prop={'size': 10})
+                    for mcts_step in self.mcts_step_best_action_changed[1:]:
+                        plt_value_statistics.axvline(x=mcts_step, color="darkgrey", alpha=0.7)
 
 
+                plt_value_statistics.legend(title=f"a = ({get_x_y_direction(best_action)})", loc="upper right", prop={'size': 10})
 
             self.fig_policy_value_statistics.tight_layout()
             self.canvas_policy_value_statistics_plot.draw()

@@ -223,7 +223,7 @@ def main():
     window.update_policy_plot(policy=zero_policy, num_mcts_step=0)
   
     window.update_reward_value_statistics_plot(0, 0, 0, 0, init=True)
-
+    window.update_policy_value_statistics_plot(policy=None, value=None, num_step=None, show=True, init=True)
     
     #
     # Thread: creating gif (periodically create a screenshot)
@@ -239,10 +239,8 @@ def main():
         mcts = MCTS_Window(env, policyValueNetwork, stateToImageConverter)
 
         window.reset_policy_statistics()
-        #window.update_policy_statistics_plot(zip(([], [])), 0, show=True)
-
-        
-
+   
+     
         for num_mcts_step in range(NUM_MCTS_STEPS):
             
             if num_mcts_step % NUM_MCTS_SUB_STEPS_PLOT == 0:
