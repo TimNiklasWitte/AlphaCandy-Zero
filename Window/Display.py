@@ -310,7 +310,10 @@ class Display(tk.Frame):
             # Plot mean of collected rewards (not all! only of displayed)
             collected_rewards_part = self.collected_rewards[max(0, self.step_cnt - 50):self.step_cnt]
             mean_collected_rewards_part = np.mean(collected_rewards_part)
-            plt_reward_statistics.axhline(mean_collected_rewards_part, color='r', linestyle="--", label="Mean")
+
+            if len(self.collected_rewards) > 1:
+                plt_reward_statistics.axhline(mean_collected_rewards_part, color='r', linestyle="--", label="Average")
+            
             plt_reward_statistics.legend()
 
             plt_reward_statistics.xaxis.set_major_locator(MaxNLocator(integer=True))
