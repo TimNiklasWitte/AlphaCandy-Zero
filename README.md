@@ -112,6 +112,13 @@ optional arguments:
 - argparse
 - imageio
 - pyautogui
+- tqdm
+- seaborn
+- pandas
+- sys 
+- PIL
+- multiprocessing
+- itertools
 
 ## Notice
 
