@@ -3,7 +3,9 @@ import numpy as np
 from multiprocessing import Process, shared_memory
 import tqdm
 import time
+import argparse
 
+import os
 import sys
 sys.path.append("../")
 
@@ -11,16 +13,13 @@ from Raw_MCTS import *
 from CandyCrushGym import *
 
 
-root_performance_logs = "./logs/performance"
-root_time_logs = "./logs/time"
-
 NUM_PROCS = 32
 
 NUM_ITERATIONS = 10
 
-def process_runMCTS(process_id, num_mcts_iterations, avg_rewards_shm, sum_rewards_shm, times_shm):
+def process_runMCTS(process_id, seed, candy_buff_height, num_mcts_iterations, avg_rewards_shm, sum_rewards_shm, times_shm):
     
-    env = CandyCrushGym()
+    env = CandyCrushGym(seed=seed, candy_buff_height=candy_buff_height)
     env.reset()
 
     avg_rewards_mem = np.ndarray(shape=(NUM_PROCS, ), dtype=np.float32, buffer=avg_rewards_shm.buf)
@@ -52,11 +51,68 @@ def process_runMCTS(process_id, num_mcts_iterations, avg_rewards_shm, sum_reward
     sum_rewards_mem[process_id] = np.sum(rewards)
     times_mem[process_id] = np.average(times)
 
+def check(num: str, name: str):
+
+    try:
+        num = int(num)
+    except:
+        raise argparse.ArgumentTypeError(f"The {name} must be an integer.")
+    
+
+    if num <= 0:
+        raise argparse.ArgumentTypeError(f"The {name} must be positive and greater than zero")
+    
+    return num
 
 def main():
     
- 
-    num_mcts_iterations_list = range(200, 250, 10)
+    #
+    # Set up ArgumentParser
+    #
+
+    parser = argparse.ArgumentParser(description="Candy Crush")
+    
+    parser.add_argument("--start", help="Set the start number of MCTS steps", type=lambda start: check(start, name="step number"), required=True)
+    parser.add_argument("--stop", help="Set the end number of MCTS steps", type=lambda start: check(start, name="step number"), required=True)
+    parser.add_argument("--step", help="Set the step number going from start to end number of MCTS steps", type=lambda start: check(start, name="step number"), required=True)
+    parser.add_argument("--buff", help="Candy buff height", type=lambda start: check(start, name="Candy buff height"), required=True)
+
+    args = parser.parse_args()
+
+    start = args.start 
+    stop = args.stop 
+    step = args.step
+    candy_buff_height = args.buff
+
+    if stop <= start:
+        raise argparse.ArgumentTypeError("Start must be less than stop")
+
+    #
+    # Create dirs where log files are stored
+    #
+
+    root = f"./logs/candy_buff_height_{candy_buff_height}"
+
+    if not os.path.exists(root):
+        os.mkdir(root)
+
+    root_performance_logs = root + "/performance"
+
+    if not os.path.exists(root_performance_logs):
+        os.mkdir(root_performance_logs)
+
+    root_time_logs = root + "/time"
+
+    if not os.path.exists(root_time_logs):
+        os.mkdir(root_time_logs)
+
+    
+
+    #
+    # Start processes which execute MCTS
+    #
+    
+    num_mcts_iterations_list = range(start, stop, step)
     
 
     for num_mcts_iterations in tqdm.tqdm(num_mcts_iterations_list, position=0, leave=True):
@@ -73,14 +129,14 @@ def main():
 
         procs = []
         for process_id in range(NUM_PROCS - 1):
-
+            seed = np.random.randint(0, 999999999)
             proc = Process(target=process_runMCTS, 
-                           args=(process_id, num_mcts_iterations, avg_rewards_shm, sum_rewards_shm, times_shm,))
+                           args=(process_id, seed, candy_buff_height, num_mcts_iterations, avg_rewards_shm, sum_rewards_shm, times_shm,))
             procs.append(proc)
             proc.start()
 
-        
-        process_runMCTS(-1, num_mcts_iterations, avg_rewards_shm, sum_rewards_shm, times_shm)
+        seed = np.random.randint(0, 999999999)
+        process_runMCTS(-1, seed, candy_buff_height, num_mcts_iterations, avg_rewards_shm, sum_rewards_shm, times_shm)
 
         # complete the processes
         for proc in procs:

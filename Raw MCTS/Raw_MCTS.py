@@ -1,10 +1,5 @@
 import numpy as np
 
-import sys
-sys.path.append("../")
-
-from CandyCrushUtiles import *
-
 class Node:
     def __init__(self, parent, state, action, done):
 
@@ -54,9 +49,9 @@ class Raw_MCTS:
         # also possible top-left, down-right, down-left
         reduced_action_space = []
         for action in range(env.action_space.n):
-            if isValidAction(action):
+            if self.env.isValidAction(action):
 
-                x_y_direction = get_x_y_direction(action)
+                x_y_direction = self.env.get_x_y_direction(action)
 
                 if "top" in x_y_direction:
                     reduced_action_space.append(action)
@@ -252,7 +247,6 @@ class Raw_MCTS:
 
     def get_value(self):
         v = self.root.v / self.root.n
-        print(v)
         return v
 
     
