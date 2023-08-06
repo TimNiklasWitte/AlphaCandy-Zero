@@ -4,7 +4,6 @@ from CandyCrushGym import *
 from Config import *
 
 from WindowUtils import *
-from CandyCrushUtiles import *
 
 c_puct = 2
 
@@ -51,7 +50,7 @@ class MCTS_Window:
         self.stateToImageConverter = stateToImageConverter
 
 
-        self.reduced_action_space = get_reduced_action_space()
+        self.reduced_action_space = env.get_reduced_action_space()
         self.num_actions = len(self.reduced_action_space)
 
         self.current = self.root
@@ -202,7 +201,7 @@ class MCTS_Window:
         policy[actions] = probs
 
         
-        reduced_action_space_alternative = get_reduced_action_space_alternative()
+        reduced_action_space_alternative = self.env.get_reduced_action_space_alternative()
         action_idxs = [node.action_idx for node in self.root.childrens]
         equivalent_action_idxs = reduced_action_space_alternative[action_idxs]
 

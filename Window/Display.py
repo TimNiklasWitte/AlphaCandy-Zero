@@ -3,7 +3,9 @@ from tkinter.constants import *
 
 import sys
 sys.path.append("../")
-from CandyCrushUtiles import *
+
+
+from CandyCrushGym import *
 
 import matplotlib
 
@@ -13,8 +15,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import MaxNLocator
 
 from matplotlib.figure import Figure
-
-from matplotlib.cm import get_cmap
 
 import numpy as np
 import sys
@@ -136,26 +136,26 @@ class Display(tk.Frame):
                 if self.previous_state[y + self.env.CANDY_BUFF_HEIGHT,x] == candyID:
                     continue
                 
-                if isNormalCandy(candyID):
-                    file_name = convert_normalCandyID_name(candyID)
+                if CandyCrushGym.isNormalCandy(candyID):
+                    file_name = CandyCrushGym.convert_normalCandyID_name(candyID)
                     image = tk.PhotoImage(file=f"{self.root_img_path}/Normal/{file_name}.png")
                 
-                elif isWrappedCandyID(candyID):
-                    candyID = convertWrappedCandy_toNormal(candyID)
-                    file_name = convert_normalCandyID_name(candyID)
+                elif CandyCrushGym.isWrappedCandyID(candyID):
+                    candyID = CandyCrushGym.convertWrappedCandy_toNormal(candyID)
+                    file_name = CandyCrushGym.convert_normalCandyID_name(candyID)
                     image = tk.PhotoImage(file=f"{self.root_img_path}/Wrapped/{file_name}.png") 
                 
-                elif isHorizontalStrippedCandy(candyID):
-                    candyID = convertHorizontalStrippedCandy_toNormal(candyID)
-                    file_name = convert_normalCandyID_name(candyID)
+                elif CandyCrushGym.isHorizontalStrippedCandy(candyID):
+                    candyID = CandyCrushGym.convertHorizontalStrippedCandy_toNormal(candyID)
+                    file_name = CandyCrushGym.convert_normalCandyID_name(candyID)
                     image = tk.PhotoImage(file=f"{self.root_img_path}/Striped/Horizontal/{file_name}.png")
 
-                elif isVerticalStrippedCandy(candyID):
-                    candyID = convertVerticalStrippedCandy_toNormal(candyID)
-                    file_name = convert_normalCandyID_name(candyID)
+                elif CandyCrushGym.isVerticalStrippedCandy(candyID):
+                    candyID = CandyCrushGym.convertVerticalStrippedCandy_toNormal(candyID)
+                    file_name = CandyCrushGym.convert_normalCandyID_name(candyID)
                     image = tk.PhotoImage(file=f"{self.root_img_path}/Striped/Vertical/{file_name}.png")
 
-                elif candyID == COLOR_BOMB_CANDY_ID:
+                elif candyID == CandyCrushGym.COLOR_BOMB_CANDY_ID:
                     image = tk.PhotoImage(file=f"{self.root_img_path}/ColourBomb/ColourBomb.png")
                 
                 if self.previous_state[y + self.env.CANDY_BUFF_HEIGHT,x] == 0:
@@ -254,7 +254,7 @@ class Display(tk.Frame):
                         plt_value_statistics.axvline(x=mcts_step, color="darkgrey", alpha=0.7)
 
 
-                plt_value_statistics.legend(title=f"a = ({get_x_y_direction(best_action)})", loc="upper right", prop={'size': 10})
+                plt_value_statistics.legend(title=f"a = ({self.env.get_x_y_direction(best_action)})", loc="upper right", prop={'size': 10})
 
             self.fig_policy_value_statistics.tight_layout()
             self.canvas_policy_value_statistics_plot.draw()

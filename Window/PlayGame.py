@@ -149,7 +149,7 @@ def display_execute_action(action, env, window):
                         
                     done = False
                     if x - 1 < 0:
-                        candy = np.random.randint(1, env.NUM_ELEMENTS)
+                        candy = np.random.randint(1, env.NUM_NORMAL_CANDIES+1)
                     else:
                         candy = env.state[x - 1, column_idx]
                         env.state[x - 1, column_idx] = -1
@@ -200,14 +200,14 @@ def main():
 
     model_weight_path = args.model 
 
-    reduced_action_space = get_reduced_action_space()
+    seed = np.random.randint(0, 500000)
+    env =  env = CandyCrushGym(seed=seed,field_size=FIELD_SIZE, num_normal_candies=NUM_NORMAL_CANDIES, candy_buff_height=CANDY_BUFF_HEIGHT)
+
+    reduced_action_space = env.get_reduced_action_space()
     len_reduced_action_space = len(reduced_action_space)
     policyValueNetwork = PolicyValueNetwork(len_reduced_action_space)
     policyValueNetwork.load_weights(model_weight_path).expect_partial()
    
-    seed = np.random.randint(0, 500000)
-  
-    env = CandyCrushGym(seed)
 
     # isValidAction(4)
 

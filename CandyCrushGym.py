@@ -1069,7 +1069,7 @@ class CandyCrushGym(gym.Env):
         for action in range(self.action_space.n):
             if self.isValidAction(action):
                 
-                direction = action % NUM_DIRECTIONS
+                direction = action % self.NUM_DIRECTIONS
 
                 # top
                 if direction == 0:
