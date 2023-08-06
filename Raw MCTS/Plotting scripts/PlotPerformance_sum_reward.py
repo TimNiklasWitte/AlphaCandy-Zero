@@ -14,7 +14,7 @@ def main():
 
     dfs = []
 
-    for candy_buff_height in range(4,7):
+    for candy_buff_height in [1, 10, 15]:
 
         root_performance_logs = f"../logs/candy_buff_height_{candy_buff_height}/performance/"
 
@@ -36,7 +36,7 @@ def main():
     # return 
     #fig, axes = plt.subplots(2, 1, figsize=(8,8))
 
-    sns.violinplot(data=dfs, x="Number of MCTS iterations", y="Sum reward", hue="Candy buff height")
+    sns.boxplot(data=dfs, x="Number of MCTS iterations", y="Sum reward", hue="Candy buff height")
     #sns.violinplot(data=dfs, x="Number of MCTS iterations", y="Sum reward", ax=axes[1])
 
     #fig.suptitle('Vanilla MCTS: Distribution of sum rewards')
