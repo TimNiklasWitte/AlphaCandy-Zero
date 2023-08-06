@@ -4,35 +4,43 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-root_performance_logs = "../logs/performance"
+
 
 def main():
 
     sns.set_theme(style="whitegrid", palette="pastel")
     
-    num_mcts_iterations = range(10, 250, 20)
+    num_mcts_iterations = range(25, 275, 25)
 
     dfs = []
-    for i in num_mcts_iterations:
 
-        x = np.load(f"{root_performance_logs}/sum_rewards_{i}.npy")
+    for candy_buff_height in range(4,7):
 
-        data = {"Number of MCTS iterations": i, 
-                    "Sum reward": x}
+        root_performance_logs = f"../logs/candy_buff_height_{candy_buff_height}/performance/"
 
-        df = pd.DataFrame(data)
-        
-        dfs.append(df)
+        for num_mcts_iteration in num_mcts_iterations:
+
+            x = np.load(f"{root_performance_logs}/sum_rewards_{num_mcts_iteration}.npy")
+
+            data = {"Number of MCTS iterations": num_mcts_iteration, 
+                    "Candy buff height": candy_buff_height,
+                        "Sum reward": x}
+
+            df = pd.DataFrame(data)
+            
+            dfs.append(df)
 
     dfs = pd.concat(dfs)
     
-    fig, axes = plt.subplots(2, 1, figsize=(8,8))
+    # print(dfs)
+    # return 
+    #fig, axes = plt.subplots(2, 1, figsize=(8,8))
 
-    sns.boxplot(data=dfs, x="Number of MCTS iterations", y="Sum reward", ax=axes[0])
-    sns.violinplot(data=dfs, x="Number of MCTS iterations", y="Sum reward", ax=axes[1])
+    sns.violinplot(data=dfs, x="Number of MCTS iterations", y="Sum reward", hue="Candy buff height")
+    #sns.violinplot(data=dfs, x="Number of MCTS iterations", y="Sum reward", ax=axes[1])
 
-    fig.suptitle('Vanilla MCTS: Distribution of sum rewards')
-    plt.savefig("./Plots/Vanilla_MCTS_performance_sum_reward.png")
+    #fig.suptitle('Vanilla MCTS: Distribution of sum rewards')
+    #plt.savefig("./Plots/Vanilla_MCTS_performance_sum_reward.png")
     plt.show()
 
 if __name__ == '__main__':
