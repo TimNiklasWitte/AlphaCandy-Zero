@@ -3,7 +3,6 @@ from CandyCrushGym import *
 
 from Config import *
 
-from CandyCrushUtiles import *
 
 c_puct = 2
 
@@ -46,7 +45,7 @@ class MCTS:
         self.env = env
         self.root = Node(parent=None, state=env.state, action=-1, action_idx=-1, p=1)
 
-        self.reduced_action_space = get_reduced_action_space()
+        self.reduced_action_space = env.get_reduced_action_space()
         self.num_actions = len(self.reduced_action_space)
 
 

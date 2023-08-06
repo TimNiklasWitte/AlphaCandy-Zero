@@ -1,3 +1,5 @@
+import numpy as np
+
 #
 # Training
 #
@@ -9,8 +11,8 @@ BATCH_SIZE = 64
 # Create dataset
 #
 
-MCTS_BUFFER_SIZE = 700
-NUM_PROCS = 100
+MCTS_BUFFER_SIZE = 4
+NUM_PROCS = 2
 iterations_per_process = int(MCTS_BUFFER_SIZE / NUM_PROCS) # // better?
 
 NUM_MCTS_STEPS = 150
@@ -27,37 +29,39 @@ TEST_DATASET_SIZE_PERCENTAGE = 10
 #
 # Evaluation
 #
-EVAL_NUM_PROCS = 32
-EVAL_NUM_STEPS_PER_PROC = 10
+EVAL_NUM_PROCS = 2#32
+EVAL_NUM_STEPS_PER_PROC = 2#10
 
 
 #
 # Data Augmentation
 #
 
-AUG_NUM_PROCS = 32
+AUG_NUM_PROCS = 5
+AUG_FACTOR = 10
 
 #
 # State shape
 #
-from CandyCrushGym import *
-env = CandyCrushGym()
-state = env.reset()
-
-STATE_SHAPE = state.shape
-STATE_DTYPE = state.dtype
-
-NUM_ACTIONS = env.action_space.n
-import numpy as np
-
-
-#ACTION_DTYPE = np.float32
-
-
+FIELD_SIZE = 8
+NUM_NORMAL_CANDIES = 6
 CANDY_BUFF_HEIGHT = 5
+
+NUM_DIRECTIONS = 4
+
+
+
+STATE_SHAPE = (FIELD_SIZE + CANDY_BUFF_HEIGHT, FIELD_SIZE)
+STATE_DTYPE = np.uint8
+
+NUM_ACTIONS = FIELD_SIZE * FIELD_SIZE * NUM_DIRECTIONS
+
+
+
+
 CANDY_IMG_SIZE = 10
 
-STATE_IMG_SHAPE = ((env.FIELD_SIZE + CANDY_BUFF_HEIGHT)* CANDY_IMG_SIZE, env.FIELD_SIZE * CANDY_IMG_SIZE, 3)
+STATE_IMG_SHAPE = ((FIELD_SIZE + CANDY_BUFF_HEIGHT)* CANDY_IMG_SIZE, FIELD_SIZE * CANDY_IMG_SIZE, 3)
 STATE_IMG_DTYPE = np.float32
 
 

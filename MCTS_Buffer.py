@@ -110,7 +110,11 @@ def prepare_data(dataset):
 
 def process_update_dataset(process_id, seed, states_shm, values_shm, policies_shm, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema):
     
-    reduced_action_space = get_reduced_action_space()
+    env = CandyCrushGym(seed=seed, field_size=FIELD_SIZE, num_normal_candies=NUM_NORMAL_CANDIES, candy_buff_height=CANDY_BUFF_HEIGHT)
+    state = env.reset()
+
+
+    reduced_action_space = env.get_reduced_action_space()
     num_actions = len(reduced_action_space)
     
     states = np.ndarray(shape=(MCTS_BUFFER_SIZE, *STATE_SHAPE), dtype=STATE_DTYPE, buffer=states_shm.buf)
@@ -122,8 +126,7 @@ def process_update_dataset(process_id, seed, states_shm, values_shm, policies_sh
         print("<INFO> Filling MCTS_Buffer")
         iterator = tqdm.tqdm(iterator,position=0, leave=True)
     
-    env = CandyCrushGym(seed)
-    state = env.reset()
+    
 
     stateToImageConverter = StateToImageConverter(field_size=FIELD_SIZE, candy_buff_height=CANDY_BUFF_HEIGHT, image_size=CANDY_IMG_SIZE)
     for i in iterator:
@@ -158,7 +161,8 @@ def update_dataset(mcts_buffer, policyValueNetwork):
     response_value_shm_list = []
     wait_for_response_sema_list = []
     
-    reduced_action_space = get_reduced_action_space()
+    env = CandyCrushGym(field_size=FIELD_SIZE, num_normal_candies=NUM_NORMAL_CANDIES, candy_buff_height=CANDY_BUFF_HEIGHT)
+    reduced_action_space = env.get_reduced_action_space()
     num_actions = len(reduced_action_space)
 
     # prototypical state and action memory

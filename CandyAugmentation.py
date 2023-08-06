@@ -5,7 +5,9 @@ from multiprocessing import Process, shared_memory
 from Config import *
 from StateToImageConverter import *
 
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
+
+from CandyCrushGym import *
 
 class CandyAugmentation:
 
@@ -34,10 +36,7 @@ class CandyAugmentation:
         permutations = valid_permutations
        
         
-
-        num_permutations = len(permutations)
-
-        num_permutations = int(num_permutations / 2)
+        num_permutations = AUG_FACTOR
         augmentated_states = np.zeros(shape=(num_permutations, MCTS_BUFFER_SIZE, *STATE_SHAPE), dtype=STATE_DTYPE)
         augmentated_states_shm = shared_memory.SharedMemory(create=True, size=augmentated_states.nbytes)
 
@@ -91,34 +90,34 @@ class CandyAugmentation:
 
                     candy_id = states[idx, y, x]
 
-                    if isNormalCandy(candy_id):
+                    if CandyCrushGym.isNormalCandy(candy_id):
                         candy_id = candy_swap_table[candy_id - 1]
                         augmentated_states[process_id, idx, y, x] = candy_id
                         
                         continue
 
-                    if isWrappedCandyID(candy_id):
-                        candy_id = convertWrappedCandy_toNormal(candy_id)
+                    if CandyCrushGym.isWrappedCandyID(candy_id):
+                        candy_id = CandyCrushGym.convertWrappedCandy_toNormal(candy_id)
                         candy_id = candy_swap_table[candy_id - 1]
-                        candy_id = getWrappedCandyID(candy_id)
+                        candy_id = CandyCrushGym.getWrappedCandyID(candy_id)
                         augmentated_states[process_id, idx, y, x] = candy_id
                         continue
                     
-                    if isHorizontalStrippedCandy(candy_id):
-                        candy_id = convertHorizontalStrippedCandy_toNormal(candy_id)
+                    if CandyCrushGym.isHorizontalStrippedCandy(candy_id):
+                        candy_id = CandyCrushGym.convertHorizontalStrippedCandy_toNormal(candy_id)
                         candy_id = candy_swap_table[candy_id - 1]
-                        candy_id = getHorizontalStrippedCandyID(candy_id)
+                        candy_id = CandyCrushGym.getHorizontalStrippedCandyID(candy_id)
                         augmentated_states[process_id, idx, y, x] = candy_id
                         continue
                     
-                    if isVerticalStrippedCandy(candy_id):
-                        candy_id = convertVerticalStrippedCandy_toNormal(candy_id)
+                    if CandyCrushGym.isVerticalStrippedCandy(candy_id):
+                        candy_id = CandyCrushGym.convertVerticalStrippedCandy_toNormal(candy_id)
                         candy_id = candy_swap_table[candy_id - 1]
-                        candy_id = getVerticalStrippedCandyID(candy_id)
+                        candy_id = CandyCrushGym.getVerticalStrippedCandyID(candy_id)
                         augmentated_states[process_id, idx, y, x] = candy_id
                         continue
 
-                    if candy_id == COLOR_BOMB_CANDY_ID:
+                    if candy_id == CandyCrushGym.COLOR_BOMB_CANDY_ID:
                         continue
                     
                     #print(augmentated_states[process_id, idx, y, x], process_id, idx, y, x)

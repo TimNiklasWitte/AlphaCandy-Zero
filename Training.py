@@ -12,19 +12,22 @@ from Logging import *
 from matplotlib import pyplot as plt
 
 # openai gym causes a warning - disable it
-from warnings import filterwarnings
-filterwarnings(action='ignore', category=DeprecationWarning, message='`np.bool8` is a deprecated alias')
+# from warnings import filterwarnings
+# filterwarnings(action='ignore', category=DeprecationWarning, message='`np.bool8` is a deprecated alias')
 
 
 def main():
-  
+    
+    env = CandyCrushGym(field_size=FIELD_SIZE, num_normal_candies=NUM_NORMAL_CANDIES, candy_buff_height=CANDY_BUFF_HEIGHT)
+
     #
     # MCTS_Buffer: Its data is used by a TensorFlow Dataset object
     #
-    reduced_action_space = get_reduced_action_space()
+    reduced_action_space = env.get_reduced_action_space()
     len_reduced_action_space = len(reduced_action_space)
     mcts_buffer = MCTS_Buffer(MCTS_BUFFER_SIZE, len_reduced_action_space, STATE_SHAPE)
 
+    
     #
     # Logging
     # 
@@ -42,7 +45,6 @@ def main():
     
  
     update_dataset(mcts_buffer, policyValueNetwork)
-
      
     dataset = tf.data.Dataset.from_generator(
                     mcts_buffer.dataset_generator,
@@ -67,28 +69,6 @@ def main():
     # Proprocessing Pipeline
     train_dataset = train_dataset.apply(prepare_data)
     test_dataset = test_dataset.apply(prepare_data)
-
-     
-    # for state, target_value, target_policy in train_dataset:
-        
-    #     # policy, value = policyValueNetwork(state)
-
-    #     # print(policy)
-    #     # policy = tf.reduce_sum(policy, axis=-1)
-    #     # print(policy)
-
-    #     state = state[0]
-
-    #     plt.imshow(state)
-    #     plt.show()
-
-    #     print(state)
-    #     print(target_value)
-    #     print(target_policy)
-
-    #     break
-
-    # return
 
     print("<INFO> Epoch: 0")
     log(train_summary_writer, policyValueNetwork, train_dataset, test_dataset, 0)

@@ -2,7 +2,7 @@ import numpy as np
 import sys
 from PIL import Image
 
-from CandyCrushUtiles import *
+from CandyCrushGym import *
 
 #from matplotlib import pyplot as plt
 
@@ -14,31 +14,31 @@ class StateToImageConverter:
 
         self.candy_buff_height = candy_buff_height
         
-        self.candy_imgs = np.zeros(shape=(NUM_CANDIES + 1, image_size, image_size, 3), dtype=np.float32)
+        self.candy_imgs = np.zeros(shape=(CandyCrushGym.NUM_CANDIES + 1, image_size, image_size, 3), dtype=np.float32)
 
-        for candyID in range(1, NUM_CANDIES + 1):
+        for candyID in range(1, CandyCrushGym.NUM_CANDIES + 1):
             
             candyID_tmp = candyID
-            if isNormalCandy(candyID):
-                file_name = convert_normalCandyID_name(candyID)
+            if CandyCrushGym.isNormalCandy(candyID):
+                file_name = CandyCrushGym.convert_normalCandyID_name(candyID)
                 img = Image.open(f"{self.root_img_path}/Normal/{file_name}.png")
                     
-            elif isWrappedCandyID(candyID):
-                candyID_tmp = convertWrappedCandy_toNormal(candyID)
-                file_name = convert_normalCandyID_name(candyID_tmp)
+            elif CandyCrushGym.isWrappedCandyID(candyID):
+                candyID_tmp = CandyCrushGym.convertWrappedCandy_toNormal(candyID)
+                file_name = CandyCrushGym.convert_normalCandyID_name(candyID_tmp)
                 img = Image.open(f"{self.root_img_path}/Wrapped/{file_name}.png") 
                         
-            elif isHorizontalStrippedCandy(candyID):
-                candyID_tmp = convertHorizontalStrippedCandy_toNormal(candyID)
-                file_name = convert_normalCandyID_name(candyID_tmp)
+            elif CandyCrushGym.isHorizontalStrippedCandy(candyID):
+                candyID_tmp = CandyCrushGym.convertHorizontalStrippedCandy_toNormal(candyID)
+                file_name = CandyCrushGym.convert_normalCandyID_name(candyID_tmp)
                 img = Image.open(f"{self.root_img_path}/Striped/Horizontal/{file_name}.png")
 
-            elif isVerticalStrippedCandy(candyID):
-                candyID_tmp = convertVerticalStrippedCandy_toNormal(candyID)
-                file_name = convert_normalCandyID_name(candyID_tmp)
+            elif CandyCrushGym.isVerticalStrippedCandy(candyID):
+                candyID_tmp = CandyCrushGym.convertVerticalStrippedCandy_toNormal(candyID)
+                file_name = CandyCrushGym.convert_normalCandyID_name(candyID_tmp)
                 img = Image.open(f"{self.root_img_path}/Striped/Vertical/{file_name}.png")
 
-            elif candyID == COLOR_BOMB_CANDY_ID:
+            elif candyID == CandyCrushGym.COLOR_BOMB_CANDY_ID:
                 img = Image.open(f"{self.root_img_path}/ColourBomb/ColourBomb.png")
 
             size = (self.image_size, self.image_size)

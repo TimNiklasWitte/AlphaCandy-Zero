@@ -5,7 +5,7 @@ from CandyCrushGym import *
 from MCTS import *
 from Config import *
 
-import tensorflow as tf
+from StateToImageConverter import *
 from multiprocessing import Process, shared_memory, Semaphore
 
 
@@ -13,10 +13,10 @@ from multiprocessing import Process, shared_memory, Semaphore
 def process_evaluate(process_id, seed, avg_rewards_shm, sum_rewards_shm, request_state_img_shm, response_policy_shm, response_value_shm, wait_for_response_sema, use_policy_network_only):
     
 
-    env = CandyCrushGym(seed)
+    env = CandyCrushGym(seed=seed, field_size=FIELD_SIZE, num_normal_candies=NUM_NORMAL_CANDIES, candy_buff_height=CANDY_BUFF_HEIGHT)
     state = env.reset()
 
-    reduced_action_space = get_reduced_action_space()
+    reduced_action_space = env.get_reduced_action_space()
     num_actions = len(reduced_action_space)
 
     avg_rewards_mem = np.ndarray(shape=(EVAL_NUM_PROCS,), dtype=np.float32, buffer=avg_rewards_shm.buf)
@@ -94,7 +94,8 @@ def evaluate(policyValueNetwork, use_policy_network_only):
     response_value_shm_list = []
     wait_for_response_sema_list = []
     
-    reduced_action_space = get_reduced_action_space()
+    env = CandyCrushGym(field_size=FIELD_SIZE, num_normal_candies=NUM_NORMAL_CANDIES, candy_buff_height=CANDY_BUFF_HEIGHT)
+    reduced_action_space = env.get_reduced_action_space()
     num_actions = len(reduced_action_space)
 
 
